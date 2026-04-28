@@ -1,6 +1,9 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useListDecks, getListDecksQueryKey } from "@workspace/api-client-react";
+import {
+  useListDecks,
+  getListDecksQueryKey,
+} from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,14 +11,28 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { apiUrl } from "@/lib/utils";
 import { extractPdf, isPdfFile, isTextFile } from "@/lib/pdf-extraction";
 import {
-  Loader2, Stethoscope, FolderOpen, FileText, ListOrdered, Wand2,
-  UploadCloud, X, CheckCircle2, AlertCircle, StopCircle,
+  Loader2,
+  Stethoscope,
+  FolderOpen,
+  FileText,
+  ListOrdered,
+  Wand2,
+  UploadCloud,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  StopCircle,
 } from "lucide-react";
 import type { Deck } from "@workspace/api-client-react/src/generated/api.schemas";
 
@@ -46,14 +63,18 @@ type FileEntry = {
   generatingMessage?: string;
 };
 
-function buildParentOptions(allDecks: DeckWithParent[]): { id: number; label: string; depth: number }[] {
-  const rootDecks = allDecks.filter(d => !d.parentId);
+function buildParentOptions(
+  allDecks: DeckWithParent[],
+): { id: number; label: string; depth: number }[] {
+  const rootDecks = allDecks.filter((d) => !d.parentId);
   const byParent = new Map<number, DeckWithParent[]>();
-  allDecks.filter(d => d.parentId).forEach(d => {
-    const pid = d.parentId!;
-    if (!byParent.has(pid)) byParent.set(pid, []);
-    byParent.get(pid)!.push(d);
-  });
+  allDecks
+    .filter((d) => d.parentId)
+    .forEach((d) => {
+      const pid = d.parentId!;
+      if (!byParent.has(pid)) byParent.set(pid, []);
+      byParent.get(pid)!.push(d);
+    });
   const result: { id: number; label: string; depth: number }[] = [];
   function walk(deck: DeckWithParent, label: string, depth: number) {
     result.push({ id: deck.id, label, depth });
@@ -76,7 +97,12 @@ function parseProgressPercent(message: string): number | null {
   return Math.round((parseInt(match[1], 10) / total) * 100);
 }
 
-export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDeckName, onDone }: GenerateQbankFormProps) {
+export function GenerateQbankForm({
+  defaultParentId,
+  prefilledText,
+  prefilledDeckName,
+  onDone,
+}: GenerateQbankFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: allDecks } = useListDecks();
@@ -88,29 +114,38 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
   // Manual text section
   const [manualText, setManualText] = useState(prefilledText ?? "");
   const [manualName, setManualName] = useState(prefilledDeckName ?? "");
-  const [manualCount, setManualCount] = useState<number | "">(DEFAULT_TARGET_QUESTIONS);
+  const [manualCount, setManualCount] = useState<number | "">(
+    DEFAULT_TARGET_QUESTIONS,
+  );
   const [manualPrompt, setManualPrompt] = useState("");
 
   // Shared
   const [sharedPrompt, setSharedPrompt] = useState("");
-  const [parentId, setParentId] = useState<string>(defaultParentId?.toString() ?? "none");
+  const [parentId, setParentId] = useState<string>(
+    defaultParentId?.toString() ?? "none",
+  );
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
-  const [lastResultDeckId, setLastResultDeckId] = useState<number | undefined>(undefined);
+  const [lastResultDeckId, setLastResultDeckId] = useState<number | undefined>(
+    undefined,
+  );
 
   const parentOptions = useMemo(
     () => buildParentOptions((allDecks as DeckWithParent[]) ?? []),
-    [allDecks]
+    [allDecks],
   );
-  const selectedParent = parentOptions.find(o => o.id.toString() === parentId);
+  const selectedParent = parentOptions.find(
+    (o) => o.id.toString() === parentId,
+  );
 
-  const isExtracting = files.some(f => f.status === "extracting");
-  const readyFiles = files.filter(f => f.status === "ready");
-  const hasManual = manualText.trim().length >= 10 && manualName.trim().length > 0;
+  const isExtracting = files.some((f) => f.status === "extracting");
+  const readyFiles = files.filter((f) => f.status === "ready");
+  const hasManual =
+    manualText.trim().length >= 10 && manualName.trim().length > 0;
   const totalTargets = readyFiles.length + (hasManual ? 1 : 0);
   const canGenerate = !isExtracting && !isGeneratingAll && totalTargets > 0;
 
   const updateFile = useCallback((id: string, patch: Partial<FileEntry>) => {
-    setFiles(prev => prev.map(f => f.id === id ? { ...f, ...patch } : f));
+    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
   }, []);
 
   const progressThrottleRef = useRef<Map<string, number>>(new Map());
@@ -119,44 +154,68 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
   const manualCancelKey = "__manual__";
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const throttledProgressUpdate = useCallback((id: string, progress: string) => {
-    const now = Date.now();
-    const last = progressThrottleRef.current.get(id) ?? 0;
-    if (now - last >= 150) {
-      progressThrottleRef.current.set(id, now);
-      setFiles(prev => prev.map(f => f.id === id ? { ...f, progress } : f));
-    }
-  }, []);
-
-  const processFile = useCallback(async (file: File) => {
-    const isTxt = isTextFile(file);
-    const isPdf = isPdfFile(file);
-    if (!isTxt && !isPdf) {
-      toast({ title: "Unsupported file", description: `${file.name} is not .txt or .pdf`, variant: "destructive" });
-      return;
-    }
-    const id = `${file.name}-${Date.now()}-${Math.random()}`;
-    const baseName = file.name.replace(/\.[^.]+$/, "");
-    setFiles(prev => [...prev, {
-      id, name: file.name, status: "extracting", text: "", progress: "Reading…",
-      qbankName: baseName, questionCount: DEFAULT_TARGET_QUESTIONS, customPrompt: "",
-    }]);
-    try {
-      if (isTxt) {
-        const text = await file.text();
-        updateFile(id, { status: "ready", text, progress: "" });
-      } else {
-        const buffer = await file.arrayBuffer();
-        // Question banks are text-only — skip page screenshots, but keep OCR
-        // fallback so scanned PDFs still produce usable text.
-        const { text } = await extractPdf(buffer, (progress) => throttledProgressUpdate(id, progress));
-        updateFile(id, { status: "ready", text, progress: "" });
+  const throttledProgressUpdate = useCallback(
+    (id: string, progress: string) => {
+      const now = Date.now();
+      const last = progressThrottleRef.current.get(id) ?? 0;
+      if (now - last >= 150) {
+        progressThrottleRef.current.set(id, now);
+        setFiles((prev) =>
+          prev.map((f) => (f.id === id ? { ...f, progress } : f)),
+        );
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Extraction failed";
-      updateFile(id, { status: "error", progress: message });
-    }
-  }, [updateFile, throttledProgressUpdate, toast]);
+    },
+    [],
+  );
+
+  const processFile = useCallback(
+    async (file: File) => {
+      const isTxt = isTextFile(file);
+      const isPdf = isPdfFile(file);
+      if (!isTxt && !isPdf) {
+        toast({
+          title: "Unsupported file",
+          description: `${file.name} is not .txt or .pdf`,
+          variant: "destructive",
+        });
+        return;
+      }
+      const id = `${file.name}-${Date.now()}-${Math.random()}`;
+      const baseName = file.name.replace(/\.[^.]+$/, "");
+      setFiles((prev) => [
+        ...prev,
+        {
+          id,
+          name: file.name,
+          status: "extracting",
+          text: "",
+          progress: "Reading…",
+          qbankName: baseName,
+          questionCount: DEFAULT_TARGET_QUESTIONS,
+          customPrompt: "",
+        },
+      ]);
+      try {
+        if (isTxt) {
+          const text = await file.text();
+          updateFile(id, { status: "ready", text, progress: "" });
+        } else {
+          const buffer = await file.arrayBuffer();
+          // Question banks are text-only — skip page screenshots, but keep OCR
+          // fallback so scanned PDFs still produce usable text.
+          const { text } = await extractPdf(buffer, (progress) =>
+            throttledProgressUpdate(id, progress),
+          );
+          updateFile(id, { status: "ready", text, progress: "" });
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Extraction failed";
+        updateFile(id, { status: "error", progress: message });
+      }
+    },
+    [updateFile, throttledProgressUpdate, toast],
+  );
 
   const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
@@ -171,8 +230,8 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
   };
 
   useEffect(() => {
-    if (prefilledText) setManualText(prev => prev || prefilledText);
-    if (prefilledDeckName) setManualName(prev => prev || prefilledDeckName);
+    if (prefilledText) setManualText((prev) => prev || prefilledText);
+    if (prefilledDeckName) setManualName((prev) => prev || prefilledDeckName);
   }, [prefilledText, prefilledDeckName]);
 
   const resolvedParentId = parentId === "none" ? null : parseInt(parentId, 10);
@@ -199,64 +258,97 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
         body: JSON.stringify({
           text,
           deckName: qbankName,
-          questionCount: typeof questionCount === "number" ? questionCount : DEFAULT_TARGET_QUESTIONS,
+          questionCount:
+            typeof questionCount === "number"
+              ? questionCount
+              : DEFAULT_TARGET_QUESTIONS,
           parentId: pid,
           customPrompt: effectivePrompt || undefined,
         }),
-      }).then(async resp => {
-        if (!resp.ok || !resp.body) {
-          const err = await resp.json().catch(() => ({}));
-          reject(new Error((err as { error?: string }).error ?? `Generation failed (${resp.status})`));
-          return;
-        }
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-        let buf = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buf += decoder.decode(value, { stream: true });
-          const lines = buf.split("\n");
-          buf = lines.pop() ?? "";
-          for (const line of lines) {
-            if (!line.startsWith("data:")) continue;
-            try {
-              const event = JSON.parse(line.slice(5).trim()) as {
-                type: string; percent?: number; message?: string;
-                generatedCount?: number; deck?: { id: number };
-              };
-              if (event.type === "progress" && fileId) {
-                setFiles(prev => prev.map(f =>
-                  f.id === fileId
-                    ? { ...f, generatingPercent: event.percent, generatingMessage: event.message }
-                    : f
-                ));
-              } else if (event.type === "done") {
-                if (event.deck) {
-                  resolve({ generatedCount: event.generatedCount ?? 0, deckId: event.deck.id });
-                } else {
-                  reject(new Error("Generation finished without a question bank"));
-                }
-                return;
-              } else if (event.type === "error") {
-                reject(new Error(event.message ?? "Generation failed"));
-                return;
-              }
-            } catch { continue; }
+      })
+        .then(async (resp) => {
+          if (!resp.ok || !resp.body) {
+            const err = await resp.json().catch(() => ({}));
+            reject(
+              new Error(
+                (err as { error?: string }).error ??
+                  `Generation failed (${resp.status})`,
+              ),
+            );
+            return;
           }
-        }
-        reject(new Error(
-          "Connection dropped before generation finished. Please try again — nothing was saved.",
-        ));
-      }).catch(err => {
-        if (err && typeof err === "object" && (err as { name?: string }).name === "AbortError") {
-          reject(new Error("Cancelled"));
-        } else {
-          reject(err);
-        }
-      }).finally(() => {
-        abortControllersRef.current.delete(fileId ?? manualCancelKey);
-      });
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop() ?? "";
+            for (const line of lines) {
+              if (!line.startsWith("data:")) continue;
+              try {
+                const event = JSON.parse(line.slice(5).trim()) as {
+                  type: string;
+                  percent?: number;
+                  message?: string;
+                  generatedCount?: number;
+                  deck?: { id: number };
+                };
+                if (event.type === "progress" && fileId) {
+                  setFiles((prev) =>
+                    prev.map((f) =>
+                      f.id === fileId
+                        ? {
+                            ...f,
+                            generatingPercent: event.percent,
+                            generatingMessage: event.message,
+                          }
+                        : f,
+                    ),
+                  );
+                } else if (event.type === "done") {
+                  if (event.deck) {
+                    resolve({
+                      generatedCount: event.generatedCount ?? 0,
+                      deckId: event.deck.id,
+                    });
+                  } else {
+                    reject(
+                      new Error("Generation finished without a question bank"),
+                    );
+                  }
+                  return;
+                } else if (event.type === "error") {
+                  reject(new Error(event.message ?? "Generation failed"));
+                  return;
+                }
+              } catch {
+                continue;
+              }
+            }
+          }
+          reject(
+            new Error(
+              "Connection dropped before generation finished. Please try again — nothing was saved.",
+            ),
+          );
+        })
+        .catch((err) => {
+          if (
+            err &&
+            typeof err === "object" &&
+            (err as { name?: string }).name === "AbortError"
+          ) {
+            reject(new Error("Cancelled"));
+          } else {
+            reject(err);
+          }
+        })
+        .finally(() => {
+          abortControllersRef.current.delete(fileId ?? manualCancelKey);
+        });
     });
 
   const cancelOne = (fileId: string | undefined) => {
@@ -275,23 +367,50 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
 
   const resetState = () => {
     setFiles([]);
-    setManualText(""); setManualName(""); setManualCount(DEFAULT_TARGET_QUESTIONS); setManualPrompt("");
+    setManualText("");
+    setManualName("");
+    setManualCount(DEFAULT_TARGET_QUESTIONS);
+    setManualPrompt("");
   };
 
-  const pauseBetween = () => new Promise(resolve => setTimeout(resolve, 1500));
+  const pauseBetween = () =>
+    new Promise((resolve) => setTimeout(resolve, 1500));
 
   const handleGenerateAll = async () => {
     setIsGeneratingAll(true);
     setIsCancelling(false);
     cancelledIdsRef.current.clear();
-    let ok = 0, fail = 0, cancelled = 0, totalQuestions = 0;
+    let ok = 0,
+      fail = 0,
+      cancelled = 0,
+      totalQuestions = 0;
     let lastDeckId: number | undefined;
 
     const targets: Array<{
-      id?: string; text: string; name: string; count: number | ""; prompt: string;
+      id?: string;
+      text: string;
+      name: string;
+      count: number | "";
+      prompt: string;
     }> = [
-      ...readyFiles.map(f => ({ id: f.id, text: f.text, name: f.qbankName, count: f.questionCount, prompt: f.customPrompt })),
-      ...(hasManual ? [{ id: undefined, text: manualText, name: manualName, count: manualCount, prompt: manualPrompt }] : []),
+      ...readyFiles.map((f) => ({
+        id: f.id,
+        text: f.text,
+        name: f.qbankName,
+        count: f.questionCount,
+        prompt: f.customPrompt,
+      })),
+      ...(hasManual
+        ? [
+            {
+              id: undefined,
+              text: manualText,
+              name: manualName,
+              count: manualCount,
+              prompt: manualPrompt,
+            },
+          ]
+        : []),
     ];
 
     for (let i = 0; i < targets.length; i++) {
@@ -303,30 +422,67 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
       }
       const key = t.id ?? manualCancelKey;
       if (cancelledIdsRef.current.has(manualCancelKey)) {
-        if (t.id) updateFile(t.id, { status: "ready", progress: "Cancelled", generatingPercent: 0, generatingMessage: undefined });
+        if (t.id)
+          updateFile(t.id, {
+            status: "ready",
+            progress: "Cancelled",
+            generatingPercent: 0,
+            generatingMessage: undefined,
+          });
         cancelled++;
         continue;
       }
-      if (t.id) updateFile(t.id, { status: "generating", progress: "", generatingPercent: 0, generatingMessage: "Starting…" });
+      if (t.id)
+        updateFile(t.id, {
+          status: "generating",
+          progress: "",
+          generatingPercent: 0,
+          generatingMessage: "Starting…",
+        });
       try {
-        const { generatedCount, deckId } = await generateOne(t.text, t.name, t.count, resolvedParentId, t.prompt, t.id);
-        if (t.id) updateFile(t.id, { status: "done", progress: "", generatedCount });
+        const { generatedCount, deckId } = await generateOne(
+          t.text,
+          t.name,
+          t.count,
+          resolvedParentId,
+          t.prompt,
+          t.id,
+        );
+        if (t.id)
+          updateFile(t.id, { status: "done", progress: "", generatedCount });
         ok++;
         totalQuestions += generatedCount;
         lastDeckId = deckId;
       } catch (error) {
-        const wasCancelled = cancelledIdsRef.current.has(key) || cancelledIdsRef.current.has(manualCancelKey);
+        const wasCancelled =
+          cancelledIdsRef.current.has(key) ||
+          cancelledIdsRef.current.has(manualCancelKey);
         if (wasCancelled) {
-          if (t.id) updateFile(t.id, { status: "ready", progress: "Cancelled", generatingPercent: 0, generatingMessage: undefined });
+          if (t.id)
+            updateFile(t.id, {
+              status: "ready",
+              progress: "Cancelled",
+              generatingPercent: 0,
+              generatingMessage: undefined,
+            });
           cancelled++;
         } else {
-          const message = error instanceof Error ? error.message : "Generation failed";
+          const message =
+            error instanceof Error ? error.message : "Generation failed";
           if (t.id) updateFile(t.id, { status: "error", progress: message });
-          toast({ title: `Could not generate ${t.name}`, description: message, variant: "destructive" });
+          toast({
+            title: `Could not generate ${t.name}`,
+            description: message,
+            variant: "destructive",
+          });
           fail++;
         }
       }
-      if (i < targets.length - 1 && !cancelledIdsRef.current.has(manualCancelKey)) await pauseBetween();
+      if (
+        i < targets.length - 1 &&
+        !cancelledIdsRef.current.has(manualCancelKey)
+      )
+        await pauseBetween();
     }
 
     setIsGeneratingAll(false);
@@ -335,7 +491,10 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
     setLastResultDeckId(lastDeckId);
 
     if (cancelled > 0 && ok === 0) {
-      toast({ title: "Generation cancelled", description: `${cancelled} ${cancelled === 1 ? "question bank" : "question banks"} were not generated.` });
+      toast({
+        title: "Generation cancelled",
+        description: `${cancelled} ${cancelled === 1 ? "question bank" : "question banks"} were not generated.`,
+      });
       return;
     }
     if (ok > 0) {
@@ -360,34 +519,52 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
           <Stethoscope className="h-3.5 w-3.5" />
         </div>
         <div className="text-xs leading-snug">
-          <div className="font-semibold text-violet-700 dark:text-violet-300 mb-0.5">UWorld-style Question Bank</div>
-          <span className="text-muted-foreground">Generates MCQs only with full distractors and detailed explanations. Drop PDFs or notes — each file becomes its own question bank.</span>
+          <div className="font-semibold text-violet-700 dark:text-violet-300 mb-0.5">
+            UWorld-style Question Bank
+          </div>
+          <span className="text-muted-foreground">
+            Generates MCQs only with full distractors and detailed explanations.
+            Drop PDFs or notes — each file becomes its own question bank.
+          </span>
         </div>
       </div>
 
       <div className="space-y-1.5">
         <Label className="text-sm flex items-center gap-1.5">
           <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
-          Parent Topic <span className="text-muted-foreground font-normal">(optional)</span>
+          Parent Topic{" "}
+          <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
         <Select value={parentId} onValueChange={setParentId}>
           <SelectTrigger className="h-8 text-sm">
-            {parentId === "none" || !selectedParent
-              ? <span className="text-muted-foreground">No parent — standalone question bank</span>
-              : <span className="truncate">{selectedParent.label}</span>
-            }
+            {parentId === "none" || !selectedParent ? (
+              <span className="text-muted-foreground">
+                No parent — standalone question bank
+              </span>
+            ) : (
+              <span className="truncate">{selectedParent.label}</span>
+            )}
           </SelectTrigger>
           <SelectContent className="max-h-64">
-            <SelectItem value="none">No parent — standalone question bank</SelectItem>
-            {parentOptions.map(opt => (
-              <SelectItem key={opt.id} value={opt.id.toString()} className="py-1.5">
+            <SelectItem value="none">
+              No parent — standalone question bank
+            </SelectItem>
+            {parentOptions.map((opt) => (
+              <SelectItem
+                key={opt.id}
+                value={opt.id.toString()}
+                className="py-1.5"
+              >
                 <span className="flex items-center gap-1 min-w-0">
                   {opt.depth > 0 && (
                     <span className="text-muted-foreground shrink-0 text-xs font-mono">
-                      {"  ".repeat(opt.depth - 1)}{"└─"}
+                      {"  ".repeat(opt.depth - 1)}
+                      {"└─"}
                     </span>
                   )}
-                  <span className="truncate">{opt.label.split(" › ").pop()}</span>
+                  <span className="truncate">
+                    {opt.label.split(" › ").pop()}
+                  </span>
                 </span>
               </SelectItem>
             ))}
@@ -399,12 +576,13 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
       <div className="space-y-1.5 rounded-lg border border-violet-500/20 bg-violet-500/5 p-3">
         <Label className="text-xs font-medium flex items-center gap-1.5">
           <Wand2 className="h-3 w-3 text-violet-500" />
-          Shared style instructions <span className="text-muted-foreground font-normal">(optional)</span>
+          Shared style instructions{" "}
+          <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
         <Textarea
           placeholder={`e.g. "USMLE Step 1 high-yield style", "include lab values", "vignette must be ≤4 sentences"`}
           value={sharedPrompt}
-          onChange={e => setSharedPrompt(e.target.value)}
+          onChange={(e) => setSharedPrompt(e.target.value)}
           className="min-h-[56px] resize-none text-xs leading-snug bg-background/80"
           disabled={isGeneratingAll}
         />
@@ -422,7 +600,10 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
             : "border-border/70 hover:border-violet-500/60 hover:bg-violet-500/[0.03]"
         }`}
         onClick={() => fileInputRef.current?.click()}
-        onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
       >
@@ -456,158 +637,225 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
 
       {/* File entries */}
       <AnimatePresence initial={false}>
-        {files.map(f => {
-          const extractPercent = f.status === "extracting" ? parseProgressPercent(f.progress) : null;
+        {files.map((f) => {
+          const extractPercent =
+            f.status === "extracting" ? parseProgressPercent(f.progress) : null;
           const accentClass =
-            f.status === "error" ? "border-l-destructive/70"
-            : f.status === "done" ? "border-l-green-500/70"
-            : f.status === "ready" ? "border-l-violet-500/50"
-            : "border-l-muted-foreground/30";
+            f.status === "error"
+              ? "border-l-destructive/70"
+              : f.status === "done"
+                ? "border-l-green-500/70"
+                : f.status === "ready"
+                  ? "border-l-violet-500/50"
+                  : "border-l-muted-foreground/30";
           return (
-          <motion.div
-            key={f.id}
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.18 } }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            layout
-          >
-          <Card className={`border-border/60 border-l-[3px] ${accentClass} shadow-sm bg-card/80 backdrop-blur-sm transition-shadow hover:shadow-md`}>
-            <CardContent className="p-3.5 space-y-2.5">
-              <div className="flex items-center gap-2.5">
-                <div className={`h-7 w-7 rounded-md flex items-center justify-center shrink-0 ${
-                  f.status === "error" ? "bg-destructive/10" :
-                  f.status === "done" ? "bg-green-500/10" :
-                  f.status === "ready" ? "bg-violet-500/10" :
-                  "bg-muted"
-                }`}>
-                  {f.status === "extracting" && <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />}
-                  {f.status === "ready"      && <FileText className="h-3.5 w-3.5 text-violet-500" />}
-                  {f.status === "generating" && <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />}
-                  {f.status === "done"       && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
-                  {f.status === "error"      && <AlertCircle className="h-3.5 w-3.5 text-destructive" />}
-                </div>
-                <span className="text-sm font-medium flex-1 truncate">{f.name}</span>
-                {f.status === "ready" && (
-                  <Badge variant="secondary" className="text-[10px] font-normal px-1.5 py-0 h-5">
-                    {(f.text.length / 1000).toFixed(1)}k chars
-                  </Badge>
-                )}
-                {f.status === "generating" && <span className="text-xs text-violet-600 font-medium shrink-0">Generating…</span>}
-                {f.status === "done"       && <Badge className="text-[10px] shrink-0 bg-violet-600 hover:bg-violet-600 px-1.5 py-0 h-5">{f.generatedCount} MCQs</Badge>}
-                {f.status === "error"      && <span className="text-xs text-destructive shrink-0 max-w-[140px] truncate">{f.progress}</span>}
-                <button
-                  onClick={() => setFiles(p => p.filter(x => x.id !== f.id))}
-                  className="text-muted-foreground hover:text-foreground ml-0.5 shrink-0 p-0.5 rounded hover:bg-muted transition-colors"
-                  disabled={isGeneratingAll || f.status === "generating"}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-
-              {f.status === "extracting" && (
-                <div className="space-y-1 pt-0.5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[11px] text-muted-foreground">{f.progress || "Processing…"}</span>
-                    {extractPercent !== null && (
-                      <span className="text-[11px] text-muted-foreground font-medium">{extractPercent}%</span>
+            <motion.div
+              key={f.id}
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.18 } }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              layout
+            >
+              <Card
+                className={`border-border/60 border-l-[3px] ${accentClass} shadow-sm bg-card/80 backdrop-blur-sm transition-shadow hover:shadow-md`}
+              >
+                <CardContent className="p-3.5 space-y-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`h-7 w-7 rounded-md flex items-center justify-center shrink-0 ${
+                        f.status === "error"
+                          ? "bg-destructive/10"
+                          : f.status === "done"
+                            ? "bg-green-500/10"
+                            : f.status === "ready"
+                              ? "bg-violet-500/10"
+                              : "bg-muted"
+                      }`}
+                    >
+                      {f.status === "extracting" && (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+                      )}
+                      {f.status === "ready" && (
+                        <FileText className="h-3.5 w-3.5 text-violet-500" />
+                      )}
+                      {f.status === "generating" && (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+                      )}
+                      {f.status === "done" && (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                      )}
+                      {f.status === "error" && (
+                        <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                      )}
+                    </div>
+                    <span className="text-sm font-medium flex-1 truncate">
+                      {f.name}
+                    </span>
+                    {f.status === "ready" && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] font-normal px-1.5 py-0 h-5"
+                      >
+                        {(f.text.length / 1000).toFixed(1)}k chars
+                      </Badge>
                     )}
+                    {f.status === "generating" && (
+                      <span className="text-xs text-violet-600 font-medium shrink-0">
+                        Generating…
+                      </span>
+                    )}
+                    {f.status === "done" && (
+                      <Badge className="text-[10px] shrink-0 bg-violet-600 hover:bg-violet-600 px-1.5 py-0 h-5">
+                        {f.generatedCount} MCQs
+                      </Badge>
+                    )}
+                    {f.status === "error" && (
+                      <span className="text-xs text-destructive shrink-0 max-w-[140px] truncate">
+                        {f.progress}
+                      </span>
+                    )}
+                    <button
+                      onClick={() =>
+                        setFiles((p) => p.filter((x) => x.id !== f.id))
+                      }
+                      className="text-muted-foreground hover:text-foreground ml-0.5 shrink-0 p-0.5 rounded hover:bg-muted transition-colors"
+                      disabled={isGeneratingAll || f.status === "generating"}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  {extractPercent !== null ? (
-                    <Progress value={extractPercent} className="h-1.5" />
-                  ) : (
-                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full w-1/3 rounded-full bg-violet-500/50 animate-pulse" />
+
+                  {f.status === "extracting" && (
+                    <div className="space-y-1 pt-0.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] text-muted-foreground">
+                          {f.progress || "Processing…"}
+                        </span>
+                        {extractPercent !== null && (
+                          <span className="text-[11px] text-muted-foreground font-medium">
+                            {extractPercent}%
+                          </span>
+                        )}
+                      </div>
+                      {extractPercent !== null ? (
+                        <Progress value={extractPercent} className="h-1.5" />
+                      ) : (
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full w-1/3 rounded-full bg-violet-500/50 animate-pulse" />
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {f.status === "generating" && (
-                <div className="space-y-1 pt-0.5">
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-[11px] text-muted-foreground truncate pr-2">
-                      {f.generatingMessage ?? "Generating…"}
-                    </span>
-                    <span className="text-[11px] font-medium text-violet-600 tabular-nums shrink-0">
-                      {f.generatingPercent ?? 0}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-violet-500/10 overflow-hidden">
-                    <div
-                      className="h-full bg-violet-500 transition-all duration-500 ease-out"
-                      style={{ width: `${Math.max(2, f.generatingPercent ?? 0)}%` }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => cancelOne(f.id)}
-                    disabled={cancelledIdsRef.current.has(f.id)}
-                    className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-                  >
-                    <StopCircle className="h-3 w-3" />
-                    {cancelledIdsRef.current.has(f.id) ? "Cancelling…" : "Cancel this question bank"}
-                  </button>
-                </div>
-              )}
+                  {f.status === "generating" && (
+                    <div className="space-y-1 pt-0.5">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-[11px] text-muted-foreground truncate pr-2">
+                          {f.generatingMessage ?? "Generating…"}
+                        </span>
+                        <span className="text-[11px] font-medium text-violet-600 tabular-nums shrink-0">
+                          {f.generatingPercent ?? 0}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-violet-500/10 overflow-hidden">
+                        <div
+                          className="h-full bg-violet-500 transition-all duration-500 ease-out"
+                          style={{
+                            width: `${Math.max(2, f.generatingPercent ?? 0)}%`,
+                          }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => cancelOne(f.id)}
+                        disabled={cancelledIdsRef.current.has(f.id)}
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                      >
+                        <StopCircle className="h-3 w-3" />
+                        {cancelledIdsRef.current.has(f.id)
+                          ? "Cancelling…"
+                          : "Cancel this question bank"}
+                      </button>
+                    </div>
+                  )}
 
-              {(f.status === "ready" || f.status === "error") && (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Question Bank Name</Label>
-                      <Input
-                        value={f.qbankName}
-                        onChange={e => updateFile(f.id, { qbankName: e.target.value })}
-                        className="h-7 text-xs"
-                        placeholder="e.g. Cardiology MCQs"
-                        disabled={isGeneratingAll}
-                      />
+                  {(f.status === "ready" || f.status === "error") && (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Question Bank Name</Label>
+                          <Input
+                            value={f.qbankName}
+                            onChange={(e) =>
+                              updateFile(f.id, { qbankName: e.target.value })
+                            }
+                            className="h-7 text-xs"
+                            placeholder="e.g. Cardiology MCQs"
+                            disabled={isGeneratingAll}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs flex items-center gap-1">
+                            <ListOrdered className="h-3 w-3" />
+                            Target MCQs
+                          </Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={200}
+                            value={f.questionCount}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              updateFile(f.id, {
+                                questionCount:
+                                  v === ""
+                                    ? ""
+                                    : Math.max(
+                                        1,
+                                        Math.min(200, parseInt(v, 10) || 1),
+                                      ),
+                              });
+                            }}
+                            className="h-7 text-xs"
+                            placeholder={`e.g. ${DEFAULT_TARGET_QUESTIONS}`}
+                            disabled={isGeneratingAll}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs flex items-center justify-between gap-1">
+                          <span>
+                            Custom instructions{" "}
+                            <span className="text-muted-foreground font-normal">
+                              (optional)
+                            </span>
+                          </span>
+                          {!f.customPrompt.trim() && sharedPrompt.trim() && (
+                            <span className="text-[10px] text-muted-foreground italic">
+                              using shared
+                            </span>
+                          )}
+                        </Label>
+                        <Textarea
+                          value={f.customPrompt}
+                          onChange={(e) =>
+                            updateFile(f.id, { customPrompt: e.target.value })
+                          }
+                          placeholder={
+                            sharedPrompt.trim() && !f.customPrompt.trim()
+                              ? `Override shared: e.g. "include lab values"`
+                              : `e.g. "high-yield only", "ECG-based vignettes"`
+                          }
+                          className="min-h-[44px] resize-none text-xs leading-snug"
+                          disabled={isGeneratingAll}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs flex items-center gap-1">
-                        <ListOrdered className="h-3 w-3" />
-                        Target MCQs
-                      </Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={200}
-                        value={f.questionCount}
-                        onChange={e => {
-                          const v = e.target.value;
-                          updateFile(f.id, { questionCount: v === "" ? "" : Math.max(1, Math.min(200, parseInt(v, 10) || 1)) });
-                        }}
-                        className="h-7 text-xs"
-                        placeholder={`e.g. ${DEFAULT_TARGET_QUESTIONS}`}
-                        disabled={isGeneratingAll}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs flex items-center justify-between gap-1">
-                      <span>Custom instructions <span className="text-muted-foreground font-normal">(optional)</span></span>
-                      {!f.customPrompt.trim() && sharedPrompt.trim() && (
-                        <span className="text-[10px] text-muted-foreground italic">using shared</span>
-                      )}
-                    </Label>
-                    <Textarea
-                      value={f.customPrompt}
-                      onChange={e => updateFile(f.id, { customPrompt: e.target.value })}
-                      placeholder={
-                        sharedPrompt.trim() && !f.customPrompt.trim()
-                          ? `Override shared: e.g. "include lab values"`
-                          : `e.g. "high-yield only", "ECG-based vignettes"`
-                      }
-                      className="min-h-[44px] resize-none text-xs leading-snug"
-                      disabled={isGeneratingAll}
-                    />
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          </motion.div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
       </AnimatePresence>
@@ -626,10 +874,12 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
             placeholder="Paste textbook chapters, lecture notes, or guideline excerpts. The AI will turn this into vignette-style MCQs."
             className="min-h-[100px] resize-none text-sm bg-background/80"
             value={manualText}
-            onChange={e => setManualText(e.target.value)}
+            onChange={(e) => setManualText(e.target.value)}
             disabled={isGeneratingAll}
           />
-          <div className="text-[11px] text-muted-foreground">{manualText.length.toLocaleString()} characters</div>
+          <div className="text-[11px] text-muted-foreground">
+            {manualText.length.toLocaleString()} characters
+          </div>
         </div>
       </div>
       <AnimatePresence>
@@ -644,7 +894,13 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">Question Bank Name</Label>
-                <Input value={manualName} onChange={e => setManualName(e.target.value)} className="h-7 text-xs" placeholder="e.g. Notes QBank" disabled={isGeneratingAll} />
+                <Input
+                  value={manualName}
+                  onChange={(e) => setManualName(e.target.value)}
+                  className="h-7 text-xs"
+                  placeholder="e.g. Notes QBank"
+                  disabled={isGeneratingAll}
+                />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs flex items-center gap-1">
@@ -656,9 +912,13 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
                   min={1}
                   max={200}
                   value={manualCount}
-                  onChange={e => {
+                  onChange={(e) => {
                     const v = e.target.value;
-                    setManualCount(v === "" ? "" : Math.max(1, Math.min(200, parseInt(v, 10) || 1)));
+                    setManualCount(
+                      v === ""
+                        ? ""
+                        : Math.max(1, Math.min(200, parseInt(v, 10) || 1)),
+                    );
                   }}
                   className="h-7 text-xs"
                   placeholder={`e.g. ${DEFAULT_TARGET_QUESTIONS}`}
@@ -667,10 +927,15 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Custom instructions <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Label className="text-xs">
+                Custom instructions{" "}
+                <span className="text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </Label>
               <Textarea
                 value={manualPrompt}
-                onChange={e => setManualPrompt(e.target.value)}
+                onChange={(e) => setManualPrompt(e.target.value)}
                 placeholder={
                   sharedPrompt.trim() && !manualPrompt.trim()
                     ? `Override shared: e.g. "ECG vignettes only"`
@@ -699,12 +964,24 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
           onClick={handleGenerateAll}
           disabled={!canGenerate}
         >
-          {isGeneratingAll
-            ? <><Loader2 className="h-4 w-4 animate-spin" />Generating…</>
-            : isExtracting
-            ? <><Loader2 className="h-4 w-4 animate-spin" />Processing files…</>
-            : <><Stethoscope className="h-4 w-4" />{totalTargets > 1 ? `Generate ${totalTargets} Question Banks` : "Generate Question Bank"}</>
-          }
+          {isGeneratingAll ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Generating…
+            </>
+          ) : isExtracting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Processing files…
+            </>
+          ) : (
+            <>
+              <Stethoscope className="h-4 w-4" />
+              {totalTargets > 1
+                ? `Generate ${totalTargets} Question Banks`
+                : "Generate Question Bank"}
+            </>
+          )}
         </Button>
         {isGeneratingAll && (
           <Button
@@ -717,15 +994,17 @@ export function GenerateQbankForm({ defaultParentId, prefilledText, prefilledDec
             {isCancelling ? "Cancelling…" : "Cancel generation"}
           </Button>
         )}
-        {lastResultDeckId !== undefined && !isGeneratingAll && files.every(f => f.status !== "generating") && (
-          <Button
-            variant="outline"
-            className="w-full h-9 mt-2 border-violet-500/30 text-violet-700 hover:bg-violet-500/10"
-            onClick={() => onDone?.(lastResultDeckId)}
-          >
-            Open question bank →
-          </Button>
-        )}
+        {lastResultDeckId !== undefined &&
+          !isGeneratingAll &&
+          files.every((f) => f.status !== "generating") && (
+            <Button
+              variant="outline"
+              className="w-full h-9 mt-2 border-violet-500/30 text-violet-700 hover:bg-violet-500/10"
+              onClick={() => onDone?.(lastResultDeckId)}
+            >
+              Open question bank →
+            </Button>
+          )}
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ const COLORS = [
 function isInteractive(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   return !!target.closest(
-    'button, a, [role="button"], [role="tab"], [role="menuitem"], [role="option"], [role="checkbox"], [role="switch"], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], label, summary, [data-ripple]'
+    'button, a, [role="button"], [role="tab"], [role="menuitem"], [role="option"], [role="checkbox"], [role="switch"], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], label, summary, [data-ripple]',
   );
 }
 

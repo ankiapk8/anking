@@ -7,7 +7,10 @@ const STORAGE_KEY = "ankigen.apk-welcome-seen.v1";
 function detectInApk() {
   if (typeof window === "undefined") return false;
   const w = window as unknown as {
-    Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+    Capacitor?: {
+      isNativePlatform?: () => boolean;
+      getPlatform?: () => string;
+    };
   };
   return (
     !!w.Capacitor?.isNativePlatform?.() ||
@@ -73,7 +76,12 @@ export function ApkWelcomeBanner() {
             initial={{ y: 60, scale: 0.94, opacity: 0 }}
             animate={{ y: 0, scale: 1, opacity: 1 }}
             exit={{ y: 40, scale: 0.96, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 320, damping: 28, mass: 0.8 }}
+            transition={{
+              type: "spring",
+              stiffness: 320,
+              damping: 28,
+              mass: 0.8,
+            }}
             className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
           >
             {/* Animated gradient background */}
@@ -161,7 +169,11 @@ export function ApkWelcomeBanner() {
                       "0 10px 30px rgba(0,0,0,0.25), 0 0 0 14px rgba(255,255,255,0)",
                     ],
                   }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeOut",
+                  }}
                 />
                 <div className="relative w-full h-full flex items-center justify-center">
                   <BookOpen className="h-10 w-10" />

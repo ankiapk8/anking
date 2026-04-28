@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Smartphone, Download, ShieldCheck, Sparkles, AlertTriangle, Loader2, Hammer, Share2, Check } from "lucide-react";
+import {
+  Smartphone,
+  Download,
+  ShieldCheck,
+  Sparkles,
+  AlertTriangle,
+  Loader2,
+  Hammer,
+  Share2,
+  Check,
+} from "lucide-react";
 import { apiUrl } from "@/lib/utils";
 
 const APK_URL = apiUrl("api/download-apk");
@@ -80,7 +90,8 @@ function pickSlotForHost(
   raw: RawStatusResponse,
   currentHost: string,
 ): "dev" | "published" {
-  if (raw.publishedHost && currentHost === raw.publishedHost) return "published";
+  if (raw.publishedHost && currentHost === raw.publishedHost)
+    return "published";
   if (raw.devHost && currentHost === raw.devHost) return "dev";
   // Heuristic: published deployments use *.replit.app, dev uses *.replit.dev / *.pike.replit.dev
   if (currentHost.endsWith(".replit.app")) return "published";
@@ -88,16 +99,12 @@ function pickSlotForHost(
   return "published";
 }
 
-function adaptStatus(
-  raw: RawStatusResponse,
-  currentHost: string,
-): BuildStatus {
+function adaptStatus(raw: RawStatusResponse, currentHost: string): BuildStatus {
   // New shape: slots + builds
   if (raw.slots && raw.builds) {
     const slot = pickSlotForHost(raw, currentHost);
     const summary = raw.slots[slot];
-    const buildState =
-      raw.builds[slot] ??
+    const buildState = raw.builds[slot] ??
       summary?.build ?? {
         status: "idle",
         targetHost: null,
@@ -152,17 +159,29 @@ export function DownloadApkCard() {
   const [configuring, setConfiguring] = useState(false);
   const [showDevConfigure, setShowDevConfigure] = useState(false);
   const [devInput, setDevInput] = useState("");
-  const [devConfigureError, setDevConfigureError] = useState<string | null>(null);
+  const [devConfigureError, setDevConfigureError] = useState<string | null>(
+    null,
+  );
   const [devConfiguring, setDevConfiguring] = useState(false);
-  const [shareState, setShareState] = useState<"idle" | "copied" | "error">("idle");
+  const [shareState, setShareState] = useState<"idle" | "copied" | "error">(
+    "idle",
+  );
   const pollRef = useRef<number | null>(null);
 
-  const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
-  const currentHost = typeof window !== "undefined" ? window.location.host.replace(/:\d+$/, "") : "";
+  const isAndroid =
+    typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+  const currentHost =
+    typeof window !== "undefined"
+      ? window.location.host.replace(/:\d+$/, "")
+      : "";
   const liveMeta = build?.apk ?? meta;
-  const trustedHosts = liveMeta ? [liveMeta.host, ...(liveMeta.additionalHosts ?? [])] : [];
+  const trustedHosts = liveMeta
+    ? [liveMeta.host, ...(liveMeta.additionalHosts ?? [])]
+    : [];
   const targetMismatch = !!(
-    liveMeta && currentHost && !trustedHosts.includes(currentHost)
+    liveMeta &&
+    currentHost &&
+    !trustedHosts.includes(currentHost)
   );
   const buildStatus = build?.build.status ?? "idle";
   const isBuilding = buildStatus === "building";
@@ -191,8 +210,10 @@ export function DownloadApkCard() {
 
   useEffect(() => {
     fetch(META_URL)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setMeta(d); })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) setMeta(d);
+      })
       .catch(() => {});
     fetchStatus();
   }, []);
@@ -229,7 +250,9 @@ export function DownloadApkCard() {
       });
       if (!r.ok) {
         const data = await r.json().catch(() => ({}));
-        setConfigureError((data as { error?: string }).error ?? "Failed to save");
+        setConfigureError(
+          (data as { error?: string }).error ?? "Failed to save",
+        );
         return;
       }
       setShowConfigure(false);
@@ -252,13 +275,17 @@ export function DownloadApkCard() {
       });
       if (!r.ok) {
         const data = await r.json().catch(() => ({}));
-        setDevConfigureError((data as { error?: string }).error ?? "Failed to save");
+        setDevConfigureError(
+          (data as { error?: string }).error ?? "Failed to save",
+        );
         return;
       }
       setShowDevConfigure(false);
       await fetchStatus();
     } catch (err) {
-      setDevConfigureError(err instanceof Error ? err.message : "Network error");
+      setDevConfigureError(
+        err instanceof Error ? err.message : "Network error",
+      );
     } finally {
       setDevConfiguring(false);
     }
@@ -312,7 +339,9 @@ export function DownloadApkCard() {
 
   const isStale = build ? build.upToDate === false : false;
 
-  const handleDownloadClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleDownloadClick = async (
+    e: React.MouseEvent<HTMLAnchorElement>,
+  ) => {
     if ((targetMismatch || isStale) && !isBuilding && !buildUnsupported) {
       e.preventDefault();
       await triggerRebuild(currentHost || undefined);
@@ -338,15 +367,22 @@ export function DownloadApkCard() {
               <Smartphone className="h-7 w-7" />
             </div>
             <div className="md:hidden">
-              <h3 className="text-lg font-serif font-bold tracking-tight">Get the Android app</h3>
-              <p className="text-sm text-muted-foreground">Install on your phone — study anywhere.</p>
+              <h3 className="text-lg font-serif font-bold tracking-tight">
+                Get the Android app
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Install on your phone — study anywhere.
+              </p>
             </div>
           </div>
 
           <div className="hidden md:block flex-1 min-w-0">
-            <h3 className="text-xl font-serif font-bold tracking-tight">Get the Android app</h3>
+            <h3 className="text-xl font-serif font-bold tracking-tight">
+              Get the Android app
+            </h3>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Native experience — full screen, app icon on your home screen, no browser bar.
+              Native experience — full screen, app icon on your home screen, no
+              browser bar.
             </p>
             <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground flex-wrap">
               <span className="inline-flex items-center gap-1.5">
@@ -358,7 +394,8 @@ export function DownloadApkCard() {
                 Self-contained app
               </span>
               <span className="text-muted-foreground/70">
-                v{meta?.versionName ?? "1.0.0"} · {meta ? formatSize(meta.sizeBytes) : "~3 MB"}
+                v{meta?.versionName ?? "1.0.0"} ·{" "}
+                {meta ? formatSize(meta.sizeBytes) : "~3 MB"}
               </span>
             </div>
             {meta && (
@@ -370,7 +407,11 @@ export function DownloadApkCard() {
 
           <div className="flex flex-col gap-2 md:items-end">
             {isBuilding ? (
-              <Button size="lg" className="gap-2 shadow-md shadow-primary/20" disabled>
+              <Button
+                size="lg"
+                className="gap-2 shadow-md shadow-primary/20"
+                disabled
+              >
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Preparing your APK…
               </Button>
@@ -390,7 +431,11 @@ export function DownloadApkCard() {
                   size="lg"
                   className="gap-2 shadow-md shadow-primary/20"
                 >
-                  <a href={downloadHref} download="anki-cards.apk" onClick={handleDownloadClick}>
+                  <a
+                    href={downloadHref}
+                    download="anki-cards.apk"
+                    onClick={handleDownloadClick}
+                  >
                     <Download className="h-4 w-4" />
                     Download APK
                   </a>
@@ -427,7 +472,9 @@ export function DownloadApkCard() {
             )}
             {isBuilding && (
               <p className="text-[11px] text-muted-foreground md:text-right">
-                Auto-configuring for <span className="font-mono">{currentHost}</span> · usually 1–2 min
+                Auto-configuring for{" "}
+                <span className="font-mono">{currentHost}</span> · usually 1–2
+                min
               </p>
             )}
             {!isBuilding && !isAndroid && !downloading && !targetMismatch && (
@@ -456,8 +503,11 @@ export function DownloadApkCard() {
                 Auto-configure available
               </p>
               <p className="text-emerald-700/80 dark:text-emerald-500/80 mt-0.5 leading-relaxed">
-                The cached APK targets <span className="font-mono">{liveMeta?.host}</span>, but you're on{" "}
-                <span className="font-mono">{currentHost}</span>. Click "Build APK for this URL" to auto-build a copy that opens this site.
+                The cached APK targets{" "}
+                <span className="font-mono">{liveMeta?.host}</span>, but you're
+                on <span className="font-mono">{currentHost}</span>. Click
+                "Build APK for this URL" to auto-build a copy that opens this
+                site.
               </p>
             </div>
           </div>
@@ -473,11 +523,14 @@ export function DownloadApkCard() {
                 {devHost ? (
                   <>
                     Dev APK currently targets{" "}
-                    <span className="font-mono">{devHost}</span>. Enter another code/URL below to retarget it.
+                    <span className="font-mono">{devHost}</span>. Enter another
+                    code/URL below to retarget it.
                   </>
                 ) : (
                   <>
-                    Enter any host code (e.g. <span className="font-mono">my-branch.replit.dev</span>) to build a dev APK pointing at it. Defaults to this site.
+                    Enter any host code (e.g.{" "}
+                    <span className="font-mono">my-branch.replit.dev</span>) to
+                    build a dev APK pointing at it. Defaults to this site.
                   </>
                 )}
               </p>
@@ -503,11 +556,22 @@ export function DownloadApkCard() {
                 placeholder="my-branch.replit.dev"
                 className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/40"
                 autoFocus
-                onKeyDown={(e) => { if (e.key === "Enter" && devInput.trim()) submitDevConfigure(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && devInput.trim())
+                    submitDevConfigure();
+                }}
               />
               <div className="flex items-center gap-2 flex-wrap">
-                <Button size="sm" onClick={submitDevConfigure} disabled={devConfiguring || !devInput.trim()}>
-                  {devConfiguring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save & build dev APK"}
+                <Button
+                  size="sm"
+                  onClick={submitDevConfigure}
+                  disabled={devConfiguring || !devInput.trim()}
+                >
+                  {devConfiguring ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    "Save & build dev APK"
+                  )}
                 </Button>
                 <a
                   href={`${APK_URL}?slot=dev`}
@@ -516,15 +580,25 @@ export function DownloadApkCard() {
                 >
                   <Download className="h-3 w-3" /> Download dev APK
                 </a>
-                <Button size="sm" variant="ghost" onClick={() => setShowDevConfigure(false)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowDevConfigure(false)}
+                >
                   Cancel
                 </Button>
                 {devConfigureError && (
-                  <span className="text-destructive text-[11px]">{devConfigureError}</span>
+                  <span className="text-destructive text-[11px]">
+                    {devConfigureError}
+                  </span>
                 )}
               </div>
               <p className="text-[10px] text-muted-foreground/70">
-                The dev APK will call <span className="font-mono">https://{devInput || "&lt;your-host&gt;"}/api</span> for AI, decks, etc. Build takes ~20–30 s.
+                The dev APK will call{" "}
+                <span className="font-mono">
+                  https://{devInput || "&lt;your-host&gt;"}/api
+                </span>{" "}
+                for AI, decks, etc. Build takes ~20–30 s.
               </p>
             </div>
           )}
@@ -538,12 +612,14 @@ export function DownloadApkCard() {
                 {publishedHost ? (
                   <>
                     The APK will be auto-built for{" "}
-                    <span className="font-mono">{publishedHost}</span> after every publish.
+                    <span className="font-mono">{publishedHost}</span> after
+                    every publish.
                   </>
                 ) : (
                   <>
-                    Set this to your <span className="font-mono">.replit.app</span> URL once
-                    so each publish ships an APK pointing at your live site.
+                    Set this to your{" "}
+                    <span className="font-mono">.replit.app</span> URL once so
+                    each publish ships an APK pointing at your live site.
                   </>
                 )}
               </p>
@@ -571,18 +647,33 @@ export function DownloadApkCard() {
                 autoFocus
               />
               <div className="flex items-center gap-2">
-                <Button size="sm" onClick={submitConfigure} disabled={configuring || !publishedInput.trim()}>
-                  {configuring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save & rebuild"}
+                <Button
+                  size="sm"
+                  onClick={submitConfigure}
+                  disabled={configuring || !publishedInput.trim()}
+                >
+                  {configuring ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    "Save & rebuild"
+                  )}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setShowConfigure(false)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowConfigure(false)}
+                >
                   Cancel
                 </Button>
                 {configureError && (
-                  <span className="text-destructive text-[11px]">{configureError}</span>
+                  <span className="text-destructive text-[11px]">
+                    {configureError}
+                  </span>
                 )}
               </div>
               <p className="text-[10px] text-muted-foreground/70">
-                Saved on the server. After every publish, the deployed app reads this and auto-builds the APK targeting that URL.
+                Saved on the server. After every publish, the deployed app reads
+                this and auto-builds the APK targeting that URL.
               </p>
             </div>
           )}
@@ -639,7 +730,9 @@ export function DownloadApkCard() {
                   >
                     <span
                       className={`shrink-0 inline-block h-1.5 w-1.5 rounded-full ${
-                        h.status === "ready" ? "bg-emerald-500" : "bg-destructive"
+                        h.status === "ready"
+                          ? "bg-emerald-500"
+                          : "bg-destructive"
                       }`}
                     />
                     <span className="text-muted-foreground tabular-nums w-14 shrink-0">
@@ -666,12 +759,14 @@ export function DownloadApkCard() {
                 APK targets a different URL
               </p>
               <p className="text-amber-700/80 dark:text-amber-500/80 mt-0.5 leading-relaxed">
-                This APK opens <span className="font-mono">{liveMeta?.host}</span>. To rebuild for{" "}
-                <span className="font-mono">{currentHost}</span>, run{" "}
+                This APK opens{" "}
+                <span className="font-mono">{liveMeta?.host}</span>. To rebuild
+                for <span className="font-mono">{currentHost}</span>, run{" "}
                 <span className="font-mono bg-amber-500/15 px-1 py-0.5 rounded">
-                  API_BASE=https://{currentHost}/api ./build-apk/build-bundled.sh
-                </span>
-                {" "}in an environment with the Android SDK installed.
+                  API_BASE=https://{currentHost}/api
+                  ./build-apk/build-bundled.sh
+                </span>{" "}
+                in an environment with the Android SDK installed.
               </p>
             </div>
           </div>

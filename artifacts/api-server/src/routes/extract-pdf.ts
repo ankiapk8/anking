@@ -58,10 +58,14 @@ function pdfDocOptions(buffer: Buffer) {
     useSystemFonts: true,
     isEvalSupported: false,
     CanvasFactory: NodeCanvasFactory,
-  } as unknown as Parameters<(typeof import("pdfjs-dist/legacy/build/pdf.mjs"))["getDocument"]>[0];
+  } as unknown as Parameters<
+    (typeof import("pdfjs-dist/legacy/build/pdf.mjs"))["getDocument"]
+  >[0];
 }
 
-async function extractEmbeddedPdfText(buffer: Buffer): Promise<{ text: string; pageTexts: string[]; numPages: number }> {
+async function extractEmbeddedPdfText(
+  buffer: Buffer,
+): Promise<{ text: string; pageTexts: string[]; numPages: number }> {
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const pdf = await pdfjsLib.getDocument(pdfDocOptions(buffer)).promise;
   const numPages = pdf.numPages;
@@ -72,7 +76,9 @@ async function extractEmbeddedPdfText(buffer: Buffer): Promise<{ text: string; p
       const page = await pdf.getPage(pageNumber);
       const content = await page.getTextContent();
       const pageText = content.items
-        .map((item) => ("str" in item && typeof item.str === "string" ? item.str : ""))
+        .map((item) =>
+          "str" in item && typeof item.str === "string" ? item.str : "",
+        )
         .filter(Boolean)
         .join(" ");
       pageTexts.push(normalizeText(pageText));
@@ -85,7 +91,10 @@ async function extractEmbeddedPdfText(buffer: Buffer): Promise<{ text: string; p
   return { text: normalizeText(pageTexts.join("\n")), pageTexts, numPages };
 }
 
-async function renderPageToBuffer(pdf: PDFDocumentProxy, pageNumber: number): Promise<Buffer> {
+async function renderPageToBuffer(
+  pdf: PDFDocumentProxy,
+  pageNumber: number,
+): Promise<Buffer> {
   const page = await pdf.getPage(pageNumber);
   const baseViewport = page.getViewport({ scale: 1 });
   const scale = Math.min(
@@ -100,7 +109,9 @@ async function renderPageToBuffer(pdf: PDFDocumentProxy, pageNumber: number): Pr
   const entry = factory.create(width, height);
 
   await page.render({
-    canvasContext: entry.context as Parameters<typeof page.render>[0]["canvasContext"],
+    canvasContext: entry.context as Parameters<
+      typeof page.render
+    >[0]["canvasContext"],
     canvas: entry.canvas as never,
     viewport,
   }).promise;
@@ -131,12 +142,25 @@ async function extractOcrText(buffer: Buffer): Promise<string> {
   return normalizeText(pageTexts.join("\n"));
 }
 
-async function processPdfBuffer(buffer: Buffer, res: express.Response, log: { info: (msg: string) => void; error: (obj: object, msg: string) => void }): Promise<void> {
+async function processPdfBuffer(
+  buffer: Buffer,
+  res: express.Response,
+  log: {
+    info: (msg: string) => void;
+    error: (obj: object, msg: string) => void;
+  },
+): Promise<void> {
   try {
-    const { text: embeddedText, pageTexts: embeddedPageTexts } = await extractEmbeddedPdfText(buffer);
+    const { text: embeddedText, pageTexts: embeddedPageTexts } =
+      await extractEmbeddedPdfText(buffer);
 
     if (embeddedText.length > MIN_TEXT_LENGTH) {
-      res.json({ text: embeddedText, pageTexts: embeddedPageTexts, length: embeddedText.length, method: "embedded" });
+      res.json({
+        text: embeddedText,
+        pageTexts: embeddedPageTexts,
+        length: embeddedText.length,
+        method: "embedded",
+      });
       return;
     }
 
@@ -145,7 +169,8 @@ async function processPdfBuffer(buffer: Buffer, res: express.Response, log: { in
 
     if (ocrText.length <= MIN_TEXT_LENGTH) {
       res.status(422).json({
-        error: "No readable text could be extracted from this PDF, even with OCR.",
+        error:
+          "No readable text could be extracted from this PDF, even with OCR.",
       });
       return;
     }
@@ -154,7 +179,10 @@ async function processPdfBuffer(buffer: Buffer, res: express.Response, log: { in
   } catch (error) {
     log.error({ err: error }, "Server-side PDF extraction failed");
     res.status(422).json({
-      error: error instanceof Error ? error.message : "Could not extract text from this PDF.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not extract text from this PDF.",
     });
   }
 }
@@ -169,14 +197,25 @@ router.post(
       next();
     }
   },
-  express.raw({ type: ["application/pdf", "application/octet-stream"], limit: "200mb" }),
+  express.raw({
+    type: ["application/pdf", "application/octet-stream"],
+    limit: "200mb",
+  }),
   async (req, res): Promise<void> => {
-    const log = (req as express.Request & { log: { info: (m: string) => void; error: (o: object, m: string) => void } }).log;
+    const log = (
+      req as express.Request & {
+        log: {
+          info: (m: string) => void;
+          error: (o: object, m: string) => void;
+        };
+      }
+    ).log;
 
     let buffer: Buffer | null = null;
 
     if ((req as express.Request & { file?: Express.Multer.File }).file) {
-      buffer = (req as express.Request & { file?: Express.Multer.File }).file!.buffer;
+      buffer = (req as express.Request & { file?: Express.Multer.File }).file!
+        .buffer;
     } else if (Buffer.isBuffer(req.body) && req.body.byteLength > 0) {
       buffer = req.body;
     }

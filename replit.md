@@ -28,6 +28,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ## Artifacts
 
 ### Anki Card Generator (`artifacts/anki-generator`)
+
 - React + Vite web app at `/`
 - Upload files (PDF, TXT) or paste text to generate Anki flashcards via AI
 - Browse and manage decks, edit cards inline, export `.apkg` for Anki import
@@ -38,6 +39,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Direct API fetches use the Vite base path helper in `src/lib/utils.ts` so PDF extraction, explain, and `.apkg` export requests route correctly in the preview/deployed app
 
 ### API Server (`artifacts/api-server`)
+
 - Express 5 backend at `/api`
 - Routes: `/api/decks`, `/api/cards`, `/api/generate`, `/api/extract-pdf`, `/api/export-apkg`, `/api/healthz`
 - AI generation uses `gpt-5.2` model via Replit AI Integrations (env vars: `AI_INTEGRATIONS_OPENAI_BASE_URL`, `AI_INTEGRATIONS_OPENAI_API_KEY`)

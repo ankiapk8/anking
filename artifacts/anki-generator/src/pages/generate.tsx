@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, FileText, ImageIcon, Layers, Plus, Stethoscope, Library } from "lucide-react";
+import {
+  Sparkles,
+  FileText,
+  ImageIcon,
+  Layers,
+  Plus,
+  Stethoscope,
+  Library,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GenerateForm } from "@/components/generate-form";
@@ -43,19 +51,23 @@ export default function Generate() {
   const accent = isQbank
     ? {
         title: "Generate Question Bank",
-        subtitle: "Drop PDFs or paste notes — we'll build vignette MCQs with full explanations.",
+        subtitle:
+          "Drop PDFs or paste notes — we'll build vignette MCQs with full explanations.",
         gradient: "from-violet-500 via-fuchsia-500 to-purple-500",
         haloA: "hsl(280 70% 60% / 0.18)",
         haloB: "hsl(290 75% 55% / 0.16)",
-        spark: "hsl(280 70% 60%), hsl(310 70% 55%), hsl(265 65% 50%), hsl(280 70% 60%)",
+        spark:
+          "hsl(280 70% 60%), hsl(310 70% 55%), hsl(265 65% 50%), hsl(280 70% 60%)",
       }
     : {
         title: "Generate Flashcards",
-        subtitle: "Turn any PDF, text, or topic into a polished study deck in seconds.",
+        subtitle:
+          "Turn any PDF, text, or topic into a polished study deck in seconds.",
         gradient: "from-primary via-emerald-500 to-lime-500",
         haloA: "hsl(150 60% 55% / 0.18)",
         haloB: "hsl(140 70% 50% / 0.16)",
-        spark: "hsl(150 60% 55%), hsl(95 65% 50%), hsl(160 60% 40%), hsl(150 60% 55%)",
+        spark:
+          "hsl(150 60% 55%), hsl(95 65% 50%), hsl(160 60% 40%), hsl(150 60% 55%)",
       };
 
   return (
@@ -96,8 +108,12 @@ export default function Generate() {
               width: 4 + (i % 3) * 3,
               height: 4 + (i % 3) * 3,
               background: isQbank
-                ? (i % 2 ? "hsl(280 70% 60% / 0.35)" : "hsl(310 70% 55% / 0.35)")
-                : (i % 2 ? "hsl(150 50% 55% / 0.35)" : "hsl(140 70% 50% / 0.35)"),
+                ? i % 2
+                  ? "hsl(280 70% 60% / 0.35)"
+                  : "hsl(310 70% 55% / 0.35)"
+                : i % 2
+                  ? "hsl(150 50% 55% / 0.35)"
+                  : "hsl(140 70% 50% / 0.35)",
               left: `${(i * 73) % 100}%`,
               top: `${10 + ((i * 47) % 70)}%`,
             }}
@@ -141,10 +157,11 @@ export default function Generate() {
             transition={{ duration: 0.4, ease: [0.22, 1.4, 0.36, 1] }}
             className={`relative h-16 w-16 rounded-2xl bg-gradient-to-br ${accent.gradient} flex items-center justify-center shadow-lg`}
           >
-            {isQbank
-              ? <Stethoscope className="h-8 w-8 text-white" />
-              : <Sparkles className="h-8 w-8 text-white" />
-            }
+            {isQbank ? (
+              <Stethoscope className="h-8 w-8 text-white" />
+            ) : (
+              <Sparkles className="h-8 w-8 text-white" />
+            )}
           </motion.div>
         </motion.div>
 
@@ -210,7 +227,9 @@ export default function Generate() {
             type="button"
             onClick={() => setMode("deck")}
             className={`relative z-10 flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-              mode === "deck" ? "text-white" : "text-muted-foreground hover:text-foreground"
+              mode === "deck"
+                ? "text-white"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Library className="h-4 w-4" />
@@ -220,7 +239,9 @@ export default function Generate() {
             type="button"
             onClick={() => setMode("qbank")}
             className={`relative z-10 flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-              mode === "qbank" ? "text-white" : "text-muted-foreground hover:text-foreground"
+              mode === "qbank"
+                ? "text-white"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Stethoscope className="h-4 w-4" />
@@ -259,7 +280,9 @@ export default function Generate() {
                     >
                       <Icon className={`h-5 w-5 ${color}`} />
                     </div>
-                    <p className="font-semibold text-sm sm:text-base">{title}</p>
+                    <p className="font-semibold text-sm sm:text-base">
+                      {title}
+                    </p>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-snug">
                       {desc}
                     </p>
@@ -277,7 +300,11 @@ export default function Generate() {
               }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              transition={{
+                delay: 0.3,
+                duration: 0.5,
+                ease: [0.22, 1, 0.36, 1],
+              }}
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
               whileTap={{ scale: 0.97 }}
               className="relative aspect-square rounded-xl overflow-hidden text-left group"
@@ -298,7 +325,9 @@ export default function Generate() {
                 <div className="h-10 w-10 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center mb-3">
                   <Sparkles className="h-5 w-5" />
                 </div>
-                <p className="font-semibold text-sm sm:text-base">Build with AI</p>
+                <p className="font-semibold text-sm sm:text-base">
+                  Build with AI
+                </p>
                 <p className="text-xs sm:text-sm text-white/85 mt-1 leading-snug">
                   Tap to start — upload, paste, generate.
                 </p>
@@ -306,7 +335,11 @@ export default function Generate() {
                   Start
                   <motion.span
                     animate={{ x: [0, 3, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
                   >
                     →
                   </motion.span>
@@ -359,12 +392,21 @@ export default function Generate() {
                     "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%)",
                 }}
                 animate={{ x: ["-30%", "130%"] }}
-                transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", repeatDelay: 0.6 }}
+                transition={{
+                  duration: 3.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  repeatDelay: 0.6,
+                }}
               />
               <div className="relative flex items-center gap-4 p-5 sm:p-6 text-white">
                 <motion.div
                   animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.05, 1] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
                   className="h-14 w-14 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shrink-0"
                 >
                   <Stethoscope className="h-7 w-7" />
@@ -374,14 +416,19 @@ export default function Generate() {
                     Build a Question Bank
                   </p>
                   <p className="text-xs sm:text-sm text-white/85 mt-0.5 leading-snug">
-                    Vignette MCQs with full distractors and detailed explanations.
+                    Vignette MCQs with full distractors and detailed
+                    explanations.
                   </p>
                 </div>
                 <div className="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold opacity-95 group-hover:opacity-100">
                   Start
                   <motion.span
                     animate={{ x: [0, 4, 0] }}
-                    transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{
+                      duration: 1.4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
                   >
                     →
                   </motion.span>
@@ -390,7 +437,8 @@ export default function Generate() {
             </motion.button>
 
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              Same PDF reading and OCR as flashcards — but every output is a multiple-choice question.
+              Same PDF reading and OCR as flashcards — but every output is a
+              multiple-choice question.
             </p>
           </motion.div>
         )}
@@ -421,10 +469,11 @@ export default function Generate() {
                       : "bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20"
                   }`}
                 >
-                  {isQbank
-                    ? <Stethoscope className="h-4 w-4 text-violet-600" />
-                    : <Sparkles className="h-4 w-4 text-primary" />
-                  }
+                  {isQbank ? (
+                    <Stethoscope className="h-4 w-4 text-violet-600" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 text-primary" />
+                  )}
                 </div>
                 <div className="min-w-0">
                   <p className="font-serif text-lg font-semibold leading-tight truncate">

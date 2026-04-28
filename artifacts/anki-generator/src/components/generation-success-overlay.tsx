@@ -74,7 +74,11 @@ export function GenerationSuccessOverlay({
                     opacity: [0, 1, 0],
                     scale: [0, 1, 0.4],
                   }}
-                  transition={{ duration: 1.4, delay: s.delay, ease: "easeOut" }}
+                  transition={{
+                    duration: 1.4,
+                    delay: s.delay,
+                    ease: "easeOut",
+                  }}
                   className="absolute left-1/2 top-1/2"
                   style={{
                     width: s.size,
@@ -93,7 +97,12 @@ export function GenerationSuccessOverlay({
             <motion.div
               initial={{ scale: 0, rotate: -90 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.05, type: "spring", stiffness: 280, damping: 14 }}
+              transition={{
+                delay: 0.05,
+                type: "spring",
+                stiffness: 280,
+                damping: 14,
+              }}
               className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_0_40px_rgba(16,185,129,0.55)]"
             >
               <motion.span
@@ -130,7 +139,9 @@ export function GenerationSuccessOverlay({
                 {cardCount > 0 && (
                   <>
                     {" · "}
-                    <span className="font-semibold text-foreground">{cardCount}</span>{" "}
+                    <span className="font-semibold text-foreground">
+                      {cardCount}
+                    </span>{" "}
                     {cardCount === 1 ? "card" : "cards"} ready to study
                   </>
                 )}

@@ -16,7 +16,9 @@ const configPath = path.join(here, "deployment.json");
 
 const arg = process.argv[2];
 if (!arg) {
-  console.error("Usage: node build-apk/set-deployed-url.mjs <https://your-app.replit.app>");
+  console.error(
+    "Usage: node build-apk/set-deployed-url.mjs <https://your-app.replit.app>",
+  );
   console.error("       node build-apk/set-deployed-url.mjs --clear");
   process.exit(1);
 }

@@ -62,11 +62,18 @@ function detectDevice(): Device {
   const isIPad =
     /iPad/.test(ua) ||
     (navigator.platform === "MacIntel" &&
-      (navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints! > 1);
+      (navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints! >
+        1);
   return isIPad ? "ipad" : "iphone";
 }
 
-export function IosInstallModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function IosInstallModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const [exiting, setExiting] = useState(false);
   const [device, setDevice] = useState<Device>("iphone");
 
@@ -197,12 +204,16 @@ export function IosInstallModal({ open, onClose }: { open: boolean; onClose: () 
               }}
             >
               <TreasureChest exiting={exiting} />
-              <h2 className="text-2xl font-bold tracking-tight mt-3" data-testid="ios-install-heading">
+              <h2
+                className="text-2xl font-bold tracking-tight mt-3"
+                data-testid="ios-install-heading"
+              >
                 {heading}
               </h2>
               <p className="text-white/85 text-sm mt-1">
                 <Apple className="inline w-3.5 h-3.5 -mt-0.5 mr-1" />
-                iOS doesn't use APK files — but you can install AnkiGen as a real app in 3 quick steps.
+                iOS doesn't use APK files — but you can install AnkiGen as a
+                real app in 3 quick steps.
               </p>
             </div>
 
@@ -265,8 +276,12 @@ export function IosInstallModal({ open, onClose }: { open: boolean; onClose: () 
                             STEP {i + 1}
                           </span>
                         </div>
-                        <div className="font-semibold text-sm">{step.title}</div>
-                        <div className="text-xs text-slate-600 mt-0.5">{step.desc}</div>
+                        <div className="font-semibold text-sm">
+                          {step.title}
+                        </div>
+                        <div className="text-xs text-slate-600 mt-0.5">
+                          {step.desc}
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -276,7 +291,8 @@ export function IosInstallModal({ open, onClose }: { open: boolean; onClose: () 
 
             <div className="px-6 pb-6">
               <p className="text-[11px] text-slate-500 text-center mb-3">
-                Tip: open this site in <strong>Safari</strong> (not Chrome) for the install option.
+                Tip: open this site in <strong>Safari</strong> (not Chrome) for
+                the install option.
               </p>
               <button
                 type="button"
@@ -311,7 +327,12 @@ export function IosInstallModal({ open, onClose }: { open: boolean; onClose: () 
                         aria-hidden
                         className="absolute w-2 h-2 rounded-full"
                         style={{
-                          background: i % 3 === 0 ? "#FACC15" : i % 3 === 1 ? "#A7F3D0" : "#FFFFFF",
+                          background:
+                            i % 3 === 0
+                              ? "#FACC15"
+                              : i % 3 === 1
+                                ? "#A7F3D0"
+                                : "#FFFFFF",
                           boxShadow: "0 0 10px rgba(254,240,138,0.9)",
                         }}
                         initial={{ opacity: 1, x: 0, y: 0, scale: 0.6 }}
@@ -332,7 +353,10 @@ export function IosInstallModal({ open, onClose }: { open: boolean; onClose: () 
                     transition={{ duration: 0.6, ease: "easeOut" }}
                     className="w-20 h-20 rounded-full bg-white/15 flex items-center justify-center mb-3 backdrop-blur"
                   >
-                    <PartyPopper className="w-10 h-10 text-yellow-200" strokeWidth={2.2} />
+                    <PartyPopper
+                      className="w-10 h-10 text-yellow-200"
+                      strokeWidth={2.2}
+                    />
                   </motion.div>
                   <motion.div
                     initial={{ opacity: 0, y: 12 }}
@@ -471,7 +495,8 @@ function TreasureChest({ exiting }: { exiting: boolean }) {
         aria-hidden
         className="absolute inset-0 rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(254,240,138,0.55) 0%, transparent 70%)",
+          background:
+            "radial-gradient(circle, rgba(254,240,138,0.55) 0%, transparent 70%)",
         }}
         animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
         transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
@@ -481,7 +506,8 @@ function TreasureChest({ exiting }: { exiting: boolean }) {
         className="absolute left-1/2 -translate-x-1/2 bottom-2 w-24 h-14 rounded-md"
         style={{
           background: "linear-gradient(180deg, #B45309 0%, #78350F 100%)",
-          boxShadow: "inset 0 -4px 0 rgba(0,0,0,0.25), 0 6px 14px rgba(0,0,0,0.35)",
+          boxShadow:
+            "inset 0 -4px 0 rgba(0,0,0,0.25), 0 6px 14px rgba(0,0,0,0.35)",
         }}
         initial={{ y: 6, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -496,11 +522,16 @@ function TreasureChest({ exiting }: { exiting: boolean }) {
         className="absolute left-1/2 -translate-x-1/2 bottom-[52px] w-24 h-8 rounded-t-[18px] origin-bottom"
         style={{
           background: "linear-gradient(180deg, #D97706 0%, #92400E 100%)",
-          boxShadow: "inset 0 2px 0 rgba(255,255,255,0.18), 0 -3px 8px rgba(0,0,0,0.25)",
+          boxShadow:
+            "inset 0 2px 0 rgba(255,255,255,0.18), 0 -3px 8px rgba(0,0,0,0.25)",
         }}
         initial={{ rotate: 0 }}
         animate={exiting ? { rotate: 0 } : { rotate: -55 }}
-        transition={{ delay: exiting ? 0 : 0.5, duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
+        transition={{
+          delay: exiting ? 0 : 0.5,
+          duration: 0.7,
+          ease: [0.2, 0.8, 0.2, 1],
+        }}
       >
         <div className="absolute inset-x-2 top-1.5 h-0.5 bg-yellow-500/80" />
       </motion.div>

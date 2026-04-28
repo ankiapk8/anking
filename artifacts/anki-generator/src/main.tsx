@@ -35,7 +35,10 @@ if (!promiseConstructor.withResolvers) {
 function detectApk() {
   if (typeof window === "undefined") return;
   const w = window as unknown as {
-    Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+    Capacitor?: {
+      isNativePlatform?: () => boolean;
+      getPlatform?: () => string;
+    };
   };
   const inApk =
     !!w.Capacitor?.isNativePlatform?.() ||
@@ -68,7 +71,9 @@ function hideSplash() {
   window.setTimeout(() => el.remove(), 700);
 }
 const SPLASH_MIN_MS = 3000;
-const startedAt = (window as unknown as { __splashStart?: number }).__splashStart ?? performance.now();
+const startedAt =
+  (window as unknown as { __splashStart?: number }).__splashStart ??
+  performance.now();
 const remaining = Math.max(0, SPLASH_MIN_MS - (performance.now() - startedAt));
 window.setTimeout(() => requestAnimationFrame(hideSplash), remaining);
 

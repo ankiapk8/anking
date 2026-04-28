@@ -23,7 +23,7 @@ const MAX_VISUAL_BBOX_AREA = 0.78;
 const MAX_VISUAL_BBOX_DIM = 0.92;
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function getErrorStatus(error: unknown): number | undefined {
@@ -40,7 +40,13 @@ function getErrorCode(error: unknown): string | undefined {
 
 function isRetryableAIError(error: unknown): boolean {
   const status = getErrorStatus(error);
-  return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+  return (
+    status === 429 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  );
 }
 
 function isAbortError(error: unknown): boolean {
@@ -67,14 +73,20 @@ async function createChatCompletionWithRetry(
         throw error;
       }
       const delayMs = delays[attempt];
-      requestLog.warn({ err: error, attempt: attempt + 1, delayMs }, "Retrying AI card generation");
+      requestLog.warn(
+        { err: error, attempt: attempt + 1, delayMs },
+        "Retrying AI card generation",
+      );
       await sleep(delayMs);
     }
   }
 }
 
 function parseJson<T>(raw: string): T[] {
-  const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
+  const cleaned = raw
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
   const candidates = [
     cleaned,
     cleaned.match(/\[[\s\S]*\]/)?.[0],
@@ -86,7 +98,9 @@ function parseJson<T>(raw: string): T[] {
       const parsed = JSON.parse(candidate);
       if (Array.isArray(parsed)) return parsed as T[];
       if (parsed && typeof parsed === "object") {
-        const arr = (parsed as Record<string, unknown>).cards ?? (parsed as Record<string, unknown>).items;
+        const arr =
+          (parsed as Record<string, unknown>).cards ??
+          (parsed as Record<string, unknown>).items;
         if (Array.isArray(arr)) return arr as T[];
       }
     } catch {
@@ -97,7 +111,10 @@ function parseJson<T>(raw: string): T[] {
 }
 
 async function getOpenAIClient() {
-  if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || !process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+  if (
+    !process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ||
+    !process.env.AI_INTEGRATIONS_OPENAI_API_KEY
+  ) {
     throw new Error("AI card generation is not configured yet.");
   }
   const { openai } = await import("@workspace/integrations-openai-ai-server");
@@ -113,11 +130,42 @@ type RawCard = {
   pageNumber?: number | null;
 };
 type Bbox = { x: number; y: number; w: number; h: number };
-type FigureType = "chart" | "table" | "radiology" | "flowchart" | "diagram" | "photomicrograph" | "trace" | "equation";
-type VisualRawCard = { pageIndex: number; front: string; back: string; bbox?: Bbox; figureType?: FigureType };
-type VisualCardResult = { front: string; back: string; image: string; sourceImage: string; bbox: Bbox | null; figureType: FigureType | null; pageNumber: number | null };
+type FigureType =
+  | "chart"
+  | "table"
+  | "radiology"
+  | "flowchart"
+  | "diagram"
+  | "photomicrograph"
+  | "trace"
+  | "equation";
+type VisualRawCard = {
+  pageIndex: number;
+  front: string;
+  back: string;
+  bbox?: Bbox;
+  figureType?: FigureType;
+};
+type VisualCardResult = {
+  front: string;
+  back: string;
+  image: string;
+  sourceImage: string;
+  bbox: Bbox | null;
+  figureType: FigureType | null;
+  pageNumber: number | null;
+};
 
-const FIGURE_TYPES: FigureType[] = ["chart", "table", "radiology", "flowchart", "diagram", "photomicrograph", "trace", "equation"];
+const FIGURE_TYPES: FigureType[] = [
+  "chart",
+  "table",
+  "radiology",
+  "flowchart",
+  "diagram",
+  "photomicrograph",
+  "trace",
+  "equation",
+];
 
 function normalizeFigureType(raw: unknown): FigureType | null {
   if (typeof raw !== "string") return null;
@@ -125,11 +173,33 @@ function normalizeFigureType(raw: unknown): FigureType | null {
   if ((FIGURE_TYPES as string[]).includes(v)) return v as FigureType;
   // Map common aliases
   if (v === "graph" || v === "plot") return "chart";
-  if (v === "xray" || v === "x-ray" || v === "ct" || v === "mri" || v === "ultrasound" || v === "imaging") return "radiology";
-  if (v === "algorithm" || v === "decision-tree" || v === "decision_tree" || v === "pathway") return "flowchart";
-  if (v === "schematic" || v === "anatomy" || v === "illustration") return "diagram";
-  if (v === "histology" || v === "micrograph" || v === "photo" || v === "clinical-photo") return "photomicrograph";
-  if (v === "ecg" || v === "eeg" || v === "trace" || v === "waveform") return "trace";
+  if (
+    v === "xray" ||
+    v === "x-ray" ||
+    v === "ct" ||
+    v === "mri" ||
+    v === "ultrasound" ||
+    v === "imaging"
+  )
+    return "radiology";
+  if (
+    v === "algorithm" ||
+    v === "decision-tree" ||
+    v === "decision_tree" ||
+    v === "pathway"
+  )
+    return "flowchart";
+  if (v === "schematic" || v === "anatomy" || v === "illustration")
+    return "diagram";
+  if (
+    v === "histology" ||
+    v === "micrograph" ||
+    v === "photo" ||
+    v === "clinical-photo"
+  )
+    return "photomicrograph";
+  if (v === "ecg" || v === "eeg" || v === "trace" || v === "waveform")
+    return "trace";
   if (v === "formula" || v === "math") return "equation";
   return null;
 }
@@ -141,13 +211,17 @@ function normalizeCard(c: unknown): RawCard | null {
   const back = typeof r.back === "string" ? r.back.trim() : "";
   if (!front || !back) return null;
 
-  const rawType = typeof r.type === "string" ? r.type.toLowerCase().trim() : "basic";
-  const wantsMcq = rawType === "mcq" || rawType === "multiple_choice" || rawType === "multiple-choice";
+  const rawType =
+    typeof r.type === "string" ? r.type.toLowerCase().trim() : "basic";
+  const wantsMcq =
+    rawType === "mcq" ||
+    rawType === "multiple_choice" ||
+    rawType === "multiple-choice";
 
   if (wantsMcq && Array.isArray(r.choices)) {
     const choices = r.choices
-      .map(c => (typeof c === "string" ? c.trim() : ""))
-      .filter(s => s.length > 0);
+      .map((c) => (typeof c === "string" ? c.trim() : ""))
+      .filter((s) => s.length > 0);
     let correctIndex: number | undefined;
     if (typeof r.correctIndex === "number" && Number.isFinite(r.correctIndex)) {
       correctIndex = Math.floor(r.correctIndex);
@@ -187,7 +261,7 @@ function normalizeBbox(raw: unknown): Bbox | null {
     w = r.w ?? r.width;
     h = r.h ?? r.height;
   }
-  if ([x, y, w, h].some(v => typeof v !== "number")) return null;
+  if ([x, y, w, h].some((v) => typeof v !== "number")) return null;
   const bbox: Bbox = {
     x: clamp01(x, 0),
     y: clamp01(y, 0),
@@ -220,8 +294,13 @@ function expandBbox(bbox: Bbox, pad: number): Bbox {
   return { x, y, w: Math.max(0, right - x), h: Math.max(0, bottom - y) };
 }
 
-async function cropImage(dataUrlOrB64: string, bbox: Bbox | null): Promise<string> {
-  const src = dataUrlOrB64.startsWith("data:") ? dataUrlOrB64 : `data:image/jpeg;base64,${dataUrlOrB64}`;
+async function cropImage(
+  dataUrlOrB64: string,
+  bbox: Bbox | null,
+): Promise<string> {
+  const src = dataUrlOrB64.startsWith("data:")
+    ? dataUrlOrB64
+    : `data:image/jpeg;base64,${dataUrlOrB64}`;
   if (!bbox) return src;
   try {
     const img = await loadImage(src);
@@ -230,8 +309,14 @@ async function cropImage(dataUrlOrB64: string, bbox: Bbox | null): Promise<strin
     const padded = expandBbox(bbox, CROP_PADDING);
     const sx = Math.round(padded.x * img.width);
     const sy = Math.round(padded.y * img.height);
-    const sw = Math.max(1, Math.min(img.width - sx, Math.round(padded.w * img.width)));
-    const sh = Math.max(1, Math.min(img.height - sy, Math.round(padded.h * img.height)));
+    const sw = Math.max(
+      1,
+      Math.min(img.width - sx, Math.round(padded.w * img.width)),
+    );
+    const sh = Math.max(
+      1,
+      Math.min(img.height - sy, Math.round(padded.h * img.height)),
+    );
     const canvas = createCanvas(sw, sh);
     const ctx = canvas.getContext("2d");
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
@@ -244,7 +329,9 @@ async function cropImage(dataUrlOrB64: string, bbox: Bbox | null): Promise<strin
 const SOURCE_THUMB_MAX = 720;
 
 async function downscaleSourcePage(dataUrlOrB64: string): Promise<string> {
-  const src = dataUrlOrB64.startsWith("data:") ? dataUrlOrB64 : `data:image/jpeg;base64,${dataUrlOrB64}`;
+  const src = dataUrlOrB64.startsWith("data:")
+    ? dataUrlOrB64
+    : `data:image/jpeg;base64,${dataUrlOrB64}`;
   try {
     const img = await loadImage(src);
     if (img.width <= SOURCE_THUMB_MAX) return src;
@@ -290,7 +377,8 @@ function chunkText(text: string, chunkSize: number, overlap: number): string[] {
       const para = window.lastIndexOf("\n\n");
       const sentence = window.lastIndexOf(". ");
       const snap = para >= 0 ? para : sentence;
-      if (snap > 0) end = start + Math.floor(chunkSize * 0.75) + snap + (para >= 0 ? 2 : 2);
+      if (snap > 0)
+        end = start + Math.floor(chunkSize * 0.75) + snap + (para >= 0 ? 2 : 2);
     }
     chunks.push(trimmed.slice(start, end).trim());
     if (end >= trimmed.length) break;
@@ -394,7 +482,8 @@ async function generateTextCardsForChunk(
   customPrompt?: string,
   pageNumber: number | null = null,
 ): Promise<RawCard[]> {
-  const systemPrompt = TEXT_CARD_SYSTEM_PROMPT_BASE + customPromptBlock(customPrompt);
+  const systemPrompt =
+    TEXT_CARD_SYSTEM_PROMPT_BASE + customPromptBlock(customPrompt);
 
   const userContent = `Source text (one segment of a larger document — treat it on its own and cover EVERY fact in it):
 
@@ -404,18 +493,24 @@ ${chunk}
 
 Goal: ~${targetCards} cards for this segment, but you MUST add more if the segment contains more distinct facts/MCQs. You may add fewer ONLY if the segment is genuinely thin (e.g. a heading or a few words). Preserve any multiple-choice questions verbatim as MCQ cards. Output JSON array only.`;
 
-  const response = await createChatCompletionWithRetry(openai, {
-    model: "gpt-4.1-mini",
-    max_completion_tokens: 16384,
-    stream: false as const,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userContent },
-    ],
-  }, requestLog, signal);
+  const response = await createChatCompletionWithRetry(
+    openai,
+    {
+      model: "gpt-4.1-mini",
+      max_completion_tokens: 16384,
+      stream: false as const,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent },
+      ],
+    },
+    requestLog,
+    signal,
+  );
 
-  const raw = (response as { choices: Array<{ message: { content: string | null } }> })
-    .choices[0]?.message?.content ?? "[]";
+  const raw =
+    (response as { choices: Array<{ message: { content: string | null } }> })
+      .choices[0]?.message?.content ?? "[]";
   const cards = parseJson<unknown>(raw)
     .map(normalizeCard)
     .filter((c): c is RawCard => c !== null);
@@ -441,9 +536,13 @@ async function generateTextCards(
   // When per-page text is provided, use page-aware chunking so every card can
   // be tagged with its source PDF page. Otherwise fall back to plain chunking
   // (and cards stay un-paged).
-  const chunks: TextChunk[] = pageTexts && pageTexts.length > 0
-    ? buildPagedChunks(pageTexts, TEXT_CHUNK_CHARS)
-    : chunkText(trimmed, TEXT_CHUNK_CHARS, TEXT_CHUNK_OVERLAP).map(t => ({ text: t, pageNumber: null }));
+  const chunks: TextChunk[] =
+    pageTexts && pageTexts.length > 0
+      ? buildPagedChunks(pageTexts, TEXT_CHUNK_CHARS)
+      : chunkText(trimmed, TEXT_CHUNK_CHARS, TEXT_CHUNK_OVERLAP).map((t) => ({
+          text: t,
+          pageNumber: null,
+        }));
 
   if (chunks.length === 0) return [];
 
@@ -451,8 +550,10 @@ async function generateTextCards(
   // a generous floor so dense chunks aren't starved. The model is also allowed
   // (and required) to exceed this when the chunk has more facts than the goal.
   const totalChars = chunks.reduce((s, c) => s + c.text.length, 0) || 1;
-  const cardsPerChunk = chunks.map(c => {
-    const proportional = Math.ceil((c.text.length / totalChars) * Math.max(maxCards, 1));
+  const cardsPerChunk = chunks.map((c) => {
+    const proportional = Math.ceil(
+      (c.text.length / totalChars) * Math.max(maxCards, 1),
+    );
     const densityFloor = Math.max(8, Math.ceil(c.text.length / 250));
     return Math.max(proportional, densityFloor);
   });
@@ -467,7 +568,15 @@ async function generateTextCards(
     const targets = cardsPerChunk.slice(i, i + CONCURRENCY);
     const settled = await Promise.allSettled(
       slice.map((chunk, idx) =>
-        generateTextCardsForChunk(openai, chunk.text, targets[idx], requestLog, signal, customPrompt, chunk.pageNumber),
+        generateTextCardsForChunk(
+          openai,
+          chunk.text,
+          targets[idx],
+          requestLog,
+          signal,
+          customPrompt,
+          chunk.pageNumber,
+        ),
       ),
     );
     for (const r of settled) {
@@ -505,7 +614,7 @@ async function generateVisualCardsForBatch(
     | { type: "text"; text: string }
     | { type: "image_url"; image_url: { url: string; detail: "high" } };
 
-  const imageUrls: ContentPart[] = batchImages.map(img => ({
+  const imageUrls: ContentPart[] = batchImages.map((img) => ({
     type: "image_url" as const,
     image_url: {
       url: img.startsWith("data:") ? img : `data:image/jpeg;base64,${img}`,
@@ -591,37 +700,60 @@ Aim for ${cardsRange} card(s) per page WHEN qualifying figures exist. Pages with
 No markdown, no commentary, no \`\`\` fences — just the JSON array.${customPromptBlock(customPrompt)}`;
 
   try {
-    const response = await createChatCompletionWithRetry(openai, {
-      model: "gpt-4.1",
-      max_completion_tokens: 16384,
-      stream: false as const,
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: [
-            { type: "text" as const, text: `Here are the ${batchImages.length} page image(s) for pages ${batchStart + 1}–${batchStart + batchImages.length}. Detect EVERY visual on each page (do not miss any) and produce generous, professional bounding boxes that include all labels, captions, and ~6–10% breathing room. Then write image-first Anki cards. Output JSON only.` },
-            ...imageUrls,
-          ],
-        },
-      ],
-    }, requestLog, signal);
+    const response = await createChatCompletionWithRetry(
+      openai,
+      {
+        model: "gpt-4.1",
+        max_completion_tokens: 16384,
+        stream: false as const,
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text" as const,
+                text: `Here are the ${batchImages.length} page image(s) for pages ${batchStart + 1}–${batchStart + batchImages.length}. Detect EVERY visual on each page (do not miss any) and produce generous, professional bounding boxes that include all labels, captions, and ~6–10% breathing room. Then write image-first Anki cards. Output JSON only.`,
+              },
+              ...imageUrls,
+            ],
+          },
+        ],
+      },
+      requestLog,
+      signal,
+    );
 
-    const raw = (response as { choices: Array<{ message: { content: string | null } }> })
-      .choices[0]?.message?.content ?? "[]";
+    const raw =
+      (response as { choices: Array<{ message: { content: string | null } }> })
+        .choices[0]?.message?.content ?? "[]";
     const parsed = parseJson<Record<string, unknown>>(raw);
     const result: VisualRawCard[] = [];
     for (const c of parsed) {
-      if (typeof c.pageIndex !== "number" || typeof c.front !== "string" || typeof c.back !== "string") continue;
+      if (
+        typeof c.pageIndex !== "number" ||
+        typeof c.front !== "string" ||
+        typeof c.back !== "string"
+      )
+        continue;
       const bbox = normalizeBbox(c.bbox);
       // Drop cards without a usable focused bbox — the user does not want full-page screenshots.
       if (!bbox) {
-        requestLog.warn({ pageIndex: c.pageIndex }, "Visual card dropped: no usable bbox");
+        requestLog.warn(
+          { pageIndex: c.pageIndex },
+          "Visual card dropped: no usable bbox",
+        );
         continue;
       }
       const area = bbox.w * bbox.h;
-      if (area > MAX_VISUAL_BBOX_AREA || (bbox.w > MAX_VISUAL_BBOX_DIM && bbox.h > MAX_VISUAL_BBOX_DIM)) {
-        requestLog.warn({ pageIndex: c.pageIndex, area, w: bbox.w, h: bbox.h }, "Visual card dropped: bbox too large (looks like a full-page screenshot)");
+      if (
+        area > MAX_VISUAL_BBOX_AREA ||
+        (bbox.w > MAX_VISUAL_BBOX_DIM && bbox.h > MAX_VISUAL_BBOX_DIM)
+      ) {
+        requestLog.warn(
+          { pageIndex: c.pageIndex, area, w: bbox.w, h: bbox.h },
+          "Visual card dropped: bbox too large (looks like a full-page screenshot)",
+        );
         continue;
       }
       result.push({
@@ -652,15 +784,19 @@ async function generateAllVisualCards(
   const batches: { start: number; imgs: string[] }[] = [];
 
   for (let i = 0; i < pagesToProcess.length; i += VISUAL_BATCH_SIZE) {
-    batches.push({ start: i, imgs: pagesToProcess.slice(i, i + VISUAL_BATCH_SIZE) });
+    batches.push({
+      start: i,
+      imgs: pagesToProcess.slice(i, i + VISUAL_BATCH_SIZE),
+    });
   }
 
   // Compute upper bound of cards per page from target. The model is also
   // instructed it MAY exceed this when a page has more distinct figures than
   // this number, so genuinely figure-rich pages aren't artificially capped.
-  const cardsPerPage = targetCount && targetCount > 0
-    ? Math.max(1, Math.min(8, Math.ceil(targetCount / pagesToProcess.length)))
-    : 3;
+  const cardsPerPage =
+    targetCount && targetCount > 0
+      ? Math.max(1, Math.min(8, Math.ceil(targetCount / pagesToProcess.length)))
+      : 3;
 
   const results: VisualCardResult[] = [];
   let doneBatches = 0;
@@ -669,30 +805,43 @@ async function generateAllVisualCards(
     if (signal?.aborted) throw new Error("Cancelled");
     const chunk = batches.slice(i, i + VISUAL_CONCURRENCY);
     const settled = await Promise.allSettled(
-      chunk.map(b => generateVisualCardsForBatch(openai, b.imgs, b.start, cardsPerPage, requestLog, signal, customPrompt).then(async cards => {
-        const out: VisualCardResult[] = [];
-        const thumbCache = new Map<number, string>();
-        for (const c of cards) {
-          if (c.pageIndex < 0 || c.pageIndex >= b.imgs.length) continue;
-          // We already rejected oversize bboxes upstream — every card here has a focused bbox.
-          const cropped = await cropImage(b.imgs[c.pageIndex], c.bbox ?? null);
-          let thumb = thumbCache.get(c.pageIndex);
-          if (!thumb) {
-            thumb = await downscaleSourcePage(b.imgs[c.pageIndex]);
-            thumbCache.set(c.pageIndex, thumb);
+      chunk.map((b) =>
+        generateVisualCardsForBatch(
+          openai,
+          b.imgs,
+          b.start,
+          cardsPerPage,
+          requestLog,
+          signal,
+          customPrompt,
+        ).then(async (cards) => {
+          const out: VisualCardResult[] = [];
+          const thumbCache = new Map<number, string>();
+          for (const c of cards) {
+            if (c.pageIndex < 0 || c.pageIndex >= b.imgs.length) continue;
+            // We already rejected oversize bboxes upstream — every card here has a focused bbox.
+            const cropped = await cropImage(
+              b.imgs[c.pageIndex],
+              c.bbox ?? null,
+            );
+            let thumb = thumbCache.get(c.pageIndex);
+            if (!thumb) {
+              thumb = await downscaleSourcePage(b.imgs[c.pageIndex]);
+              thumbCache.set(c.pageIndex, thumb);
+            }
+            out.push({
+              front: c.front.trim(),
+              back: c.back.trim(),
+              image: cropped,
+              sourceImage: thumb,
+              bbox: c.bbox ?? null,
+              figureType: c.figureType ?? null,
+              pageNumber: b.start + c.pageIndex + 1,
+            });
           }
-          out.push({
-            front: c.front.trim(),
-            back: c.back.trim(),
-            image: cropped,
-            sourceImage: thumb,
-            bbox: c.bbox ?? null,
-            figureType: c.figureType ?? null,
-            pageNumber: b.start + c.pageIndex + 1,
-          });
-        }
-        return out;
-      }))
+          return out;
+        }),
+      ),
     );
 
     for (const r of settled) {
@@ -712,14 +861,18 @@ async function generateAllVisualCards(
   return results;
 }
 
-function sseEmit(res: import("express").Response, event: Record<string, unknown>) {
+function sseEmit(
+  res: import("express").Response,
+  event: Record<string, unknown>,
+) {
   res.write(`data: ${JSON.stringify(event)}\n\n`);
 }
 
 type DeckType = "text" | "visual" | "both";
 
 function resolveDeckType(input: unknown, hasImages: boolean): DeckType {
-  const t = input === "text" || input === "visual" || input === "both" ? input : "both";
+  const t =
+    input === "text" || input === "visual" || input === "both" ? input : "both";
   if (!hasImages && t !== "text") return "text";
   return t;
 }
@@ -731,16 +884,32 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
     return;
   }
 
-  const { text, deckName, cardCount = 20, visualCardCount, parentId, pageImages, pageTexts, deckType: rawDeckType, customPrompt } = parsed.data;
+  const {
+    text,
+    deckName,
+    cardCount = 20,
+    visualCardCount,
+    parentId,
+    pageImages,
+    pageTexts,
+    deckType: rawDeckType,
+    customPrompt,
+  } = parsed.data;
 
   if (!text || text.trim().length < 10) {
-    res.status(400).json({ error: "Text is too short to generate cards from." });
+    res
+      .status(400)
+      .json({ error: "Text is too short to generate cards from." });
     return;
   }
 
   const runStartedAt = Date.now();
   let recorded = false;
-  const recordRun = async (status: "success" | "error" | "cancelled", cardsGenerated: number, errorMessage?: string) => {
+  const recordRun = async (
+    status: "success" | "error" | "cancelled",
+    cardsGenerated: number,
+    errorMessage?: string,
+  ) => {
     if (recorded) return;
     recorded = true;
     try {
@@ -751,7 +920,9 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
         cardsGenerated,
         pageCount: Array.isArray(pageImages) ? pageImages.length : 0,
         durationMs: Date.now() - runStartedAt,
-        customPrompt: customPrompt?.trim() ? customPrompt.trim().slice(0, 1500) : null,
+        customPrompt: customPrompt?.trim()
+          ? customPrompt.trim().slice(0, 1500)
+          : null,
         errorMessage: errorMessage ? errorMessage.slice(0, 500) : null,
         startedAt: new Date(runStartedAt),
         completedAt: new Date(),
@@ -782,13 +953,15 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
   res.on("close", stopHeartbeat);
   res.on("finish", stopHeartbeat);
 
-  const selectedImages = Array.isArray(pageImages) && pageImages.length > 0
-    ? pageImages.slice(0, MAX_PAGE_IMAGES)
-    : [];
+  const selectedImages =
+    Array.isArray(pageImages) && pageImages.length > 0
+      ? pageImages.slice(0, MAX_PAGE_IMAGES)
+      : [];
   const hasImages = selectedImages.length > 0;
   const deckType = resolveDeckType(rawDeckType, hasImages);
   const wantText = deckType === "text" || deckType === "both";
-  const wantVisual = (deckType === "visual" || deckType === "both") && hasImages;
+  const wantVisual =
+    (deckType === "visual" || deckType === "both") && hasImages;
 
   const maxTextCards = wantText ? Math.max(cardCount, 1) : 0;
   const maxVisualCards = wantVisual
@@ -808,7 +981,11 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
     return;
   }
 
-  sseEmit(res, { type: "progress", percent: 12, message: wantText ? "Generating text cards…" : "Analyzing pages…" });
+  sseEmit(res, {
+    type: "progress",
+    percent: 12,
+    message: wantText ? "Generating text cards…" : "Analyzing pages…",
+  });
 
   const abortController = new AbortController();
   const onClientClose = () => abortController.abort();
@@ -834,7 +1011,9 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
           customPrompt,
           (done, total) => {
             const frac = total > 0 ? done / total : 1;
-            const pct = Math.round(TEXT_START + frac * (TEXT_DONE_PERCENT - TEXT_START));
+            const pct = Math.round(
+              TEXT_START + frac * (TEXT_DONE_PERCENT - TEXT_START),
+            );
             sseEmit(res, {
               type: "progress",
               percent: pct,
@@ -842,19 +1021,42 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
             });
           },
           pageTexts,
-        ).then(cards => {
+        ).then((cards) => {
           textCards = cards;
-          sseEmit(res, { type: "progress", percent: TEXT_DONE_PERCENT, message: `Text cards done (${cards.length} generated)` });
+          sseEmit(res, {
+            type: "progress",
+            percent: TEXT_DONE_PERCENT,
+            message: `Text cards done (${cards.length} generated)`,
+          });
         })
       : Promise.resolve();
 
     const visualPromise = wantVisual
-      ? generateAllVisualCards(openai, selectedImages, maxVisualCards, req.log, (done, total) => {
-          const frac = done / total;
-          const pct = Math.round(VISUAL_START + frac * (VISUAL_END - VISUAL_START));
-          const pages = Math.min(done * VISUAL_BATCH_SIZE, selectedImages.length);
-          sseEmit(res, { type: "progress", percent: pct, message: `Analyzing & cropping images… (${pages}/${selectedImages.length} pages)` });
-        }, signal, customPrompt).then(cards => { visualCards = cards; })
+      ? generateAllVisualCards(
+          openai,
+          selectedImages,
+          maxVisualCards,
+          req.log,
+          (done, total) => {
+            const frac = done / total;
+            const pct = Math.round(
+              VISUAL_START + frac * (VISUAL_END - VISUAL_START),
+            );
+            const pages = Math.min(
+              done * VISUAL_BATCH_SIZE,
+              selectedImages.length,
+            );
+            sseEmit(res, {
+              type: "progress",
+              percent: pct,
+              message: `Analyzing & cropping images… (${pages}/${selectedImages.length} pages)`,
+            });
+          },
+          signal,
+          customPrompt,
+        ).then((cards) => {
+          visualCards = cards;
+        })
       : Promise.resolve();
 
     await Promise.all([textPromise, visualPromise]);
@@ -863,8 +1065,16 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
     if (isAbortError(error) || signal.aborted) {
       req.log.info("AI card generation cancelled by client");
       await recordRun("cancelled", 0);
-      try { sseEmit(res, { type: "error", message: "Cancelled" }); } catch { /* socket may be gone */ }
-      try { res.end(); } catch { /* ignore */ }
+      try {
+        sseEmit(res, { type: "error", message: "Cancelled" });
+      } catch {
+        /* socket may be gone */
+      }
+      try {
+        res.end();
+      } catch {
+        /* ignore */
+      }
       return;
     }
     req.log.error({ err: error }, "SSE AI card generation failed");
@@ -874,7 +1084,8 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
     if (status === 429 || code === "too_many_requests") {
       msg = "AI is temporarily rate-limited. Wait a minute and try again.";
     } else {
-      msg = error instanceof Error ? error.message : "AI card generation failed.";
+      msg =
+        error instanceof Error ? error.message : "AI card generation failed.";
     }
     await recordRun("error", 0, msg);
     sseEmit(res, { type: "error", message: msg });
@@ -884,23 +1095,35 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
   req.off("close", onClientClose);
   if (signal.aborted) {
     await recordRun("cancelled", 0);
-    try { res.end(); } catch { /* ignore */ }
+    try {
+      res.end();
+    } catch {
+      /* ignore */
+    }
     return;
   }
 
-  sseEmit(res, { type: "progress", percent: 90, message: "Saving cards to database…" });
+  sseEmit(res, {
+    type: "progress",
+    percent: 90,
+    message: "Saving cards to database…",
+  });
 
   try {
     const filteredText = textCards
-      .map(c => normalizeCard(c))
+      .map((c) => normalizeCard(c))
       .filter((c): c is RawCard => c !== null);
 
-    const filteredVisual = visualCards
-      .filter(c => c.front.length > 0 && c.back.length > 0);
+    const filteredVisual = visualCards.filter(
+      (c) => c.front.length > 0 && c.back.length > 0,
+    );
 
     if (filteredText.length === 0 && filteredVisual.length === 0) {
       await recordRun("error", 0, "AI did not return any usable cards.");
-      sseEmit(res, { type: "error", message: "AI did not return any usable cards." });
+      sseEmit(res, {
+        type: "error",
+        message: "AI did not return any usable cards.",
+      });
       res.end();
       return;
     }
@@ -920,30 +1143,37 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
     }
 
     const cardRows: (typeof cardsTable.$inferInsert)[] = [
-      ...filteredText.map(c => ({
+      ...filteredText.map((c) => ({
         deckId: primaryDeck.id,
         front: c.front,
         back: c.back,
         image: null,
         cardType: c.type === "mcq" ? ("mcq" as const) : ("basic" as const),
-        choices: c.type === "mcq" && c.choices ? JSON.stringify(c.choices) : null,
-        correctIndex: c.type === "mcq" && typeof c.correctIndex === "number" ? c.correctIndex : null,
+        choices:
+          c.type === "mcq" && c.choices ? JSON.stringify(c.choices) : null,
+        correctIndex:
+          c.type === "mcq" && typeof c.correctIndex === "number"
+            ? c.correctIndex
+            : null,
         pageNumber: c.pageNumber ?? null,
       })),
-      ...filteredVisual.map(c => ({
+      ...filteredVisual.map((c) => ({
         deckId: primaryDeck.id,
         front: c.front,
         back: c.back,
-        image: c.image.startsWith("data:") ? c.image : `data:image/jpeg;base64,${c.image}`,
+        image: c.image.startsWith("data:")
+          ? c.image
+          : `data:image/jpeg;base64,${c.image}`,
         sourceImage: c.sourceImage ?? null,
         bbox: c.bbox ? JSON.stringify(c.bbox) : null,
         pageNumber: c.pageNumber ?? null,
       })),
     ];
 
-    const inserted = cardRows.length > 0
-      ? await db.insert(cardsTable).values(cardRows).returning()
-      : [];
+    const inserted =
+      cardRows.length > 0
+        ? await db.insert(cardsTable).values(cardRows).returning()
+        : [];
     const totalInserted = inserted.length;
 
     await recordRun("success", totalInserted);
@@ -951,11 +1181,19 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
       type: "done",
       percent: 100,
       generatedCount: totalInserted,
-      deck: { ...primaryDeck, cardCount: totalInserted, createdAt: primaryDeck.createdAt.toISOString() },
+      deck: {
+        ...primaryDeck,
+        cardCount: totalInserted,
+        createdAt: primaryDeck.createdAt.toISOString(),
+      },
     });
     res.end();
   } catch (err) {
-    await recordRun("error", 0, err instanceof Error ? err.message : "Unknown error");
+    await recordRun(
+      "error",
+      0,
+      err instanceof Error ? err.message : "Unknown error",
+    );
     next(err);
   }
 });
@@ -1011,7 +1249,8 @@ async function generateQbankCardsForChunk(
   customPrompt?: string,
   pageNumber: number | null = null,
 ): Promise<RawCard[]> {
-  const systemPrompt = QBANK_SYSTEM_PROMPT_BASE + customPromptBlock(customPrompt);
+  const systemPrompt =
+    QBANK_SYSTEM_PROMPT_BASE + customPromptBlock(customPrompt);
 
   const userContent = `Source text (one segment of a larger document — write MCQs that cover EVERY testable fact in it):
 
@@ -1021,18 +1260,24 @@ ${chunk}
 
 Goal: ~${targetQuestions} high-quality MCQs for this segment, but you MUST add more if the segment contains more testable concepts. You may add fewer ONLY if the segment is genuinely thin. Every output card MUST be type="mcq". Output JSON array only.`;
 
-  const response = await createChatCompletionWithRetry(openai, {
-    model: "gpt-4.1-mini",
-    max_completion_tokens: 16384,
-    stream: false as const,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userContent },
-    ],
-  }, requestLog, signal);
+  const response = await createChatCompletionWithRetry(
+    openai,
+    {
+      model: "gpt-4.1-mini",
+      max_completion_tokens: 16384,
+      stream: false as const,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent },
+      ],
+    },
+    requestLog,
+    signal,
+  );
 
-  const raw = (response as { choices: Array<{ message: { content: string | null } }> })
-    .choices[0]?.message?.content ?? "[]";
+  const raw =
+    (response as { choices: Array<{ message: { content: string | null } }> })
+      .choices[0]?.message?.content ?? "[]";
   const cards = parseJson<unknown>(raw)
     .map(normalizeCard)
     .filter((c): c is RawCard => c !== null && c.type === "mcq");
@@ -1054,12 +1299,16 @@ async function generateQbankCards(
   const trimmed = text.trim();
   if (!trimmed) return [];
 
-  const chunks = chunkText(trimmed, TEXT_CHUNK_CHARS, TEXT_CHUNK_OVERLAP).map(t => ({ text: t, pageNumber: null as number | null }));
+  const chunks = chunkText(trimmed, TEXT_CHUNK_CHARS, TEXT_CHUNK_OVERLAP).map(
+    (t) => ({ text: t, pageNumber: null as number | null }),
+  );
   if (chunks.length === 0) return [];
 
   const totalChars = chunks.reduce((s, c) => s + c.text.length, 0) || 1;
-  const questionsPerChunk = chunks.map(c => {
-    const proportional = Math.ceil((c.text.length / totalChars) * Math.max(maxQuestions, 1));
+  const questionsPerChunk = chunks.map((c) => {
+    const proportional = Math.ceil(
+      (c.text.length / totalChars) * Math.max(maxQuestions, 1),
+    );
     const densityFloor = Math.max(4, Math.ceil(c.text.length / 400));
     return Math.max(proportional, densityFloor);
   });
@@ -1073,7 +1322,15 @@ async function generateQbankCards(
     const targets = questionsPerChunk.slice(i, i + CONCURRENCY);
     const settled = await Promise.allSettled(
       slice.map((chunk, idx) =>
-        generateQbankCardsForChunk(openai, chunk.text, targets[idx], requestLog, signal, customPrompt, chunk.pageNumber),
+        generateQbankCardsForChunk(
+          openai,
+          chunk.text,
+          targets[idx],
+          requestLog,
+          signal,
+          customPrompt,
+          chunk.pageNumber,
+        ),
       ),
     );
     for (const r of settled) {
@@ -1107,17 +1364,24 @@ router.post("/generate-qbank", async (req, res, next): Promise<void> => {
   };
 
   const text = typeof body.text === "string" ? body.text : "";
-  const deckName = typeof body.deckName === "string" ? body.deckName.trim() : "";
-  const questionCount = typeof body.questionCount === "number" && Number.isFinite(body.questionCount)
-    ? Math.max(1, Math.floor(body.questionCount))
-    : 20;
-  const parentId = typeof body.parentId === "number" && Number.isFinite(body.parentId)
-    ? body.parentId
-    : null;
-  const customPrompt = typeof body.customPrompt === "string" ? body.customPrompt : undefined;
+  const deckName =
+    typeof body.deckName === "string" ? body.deckName.trim() : "";
+  const questionCount =
+    typeof body.questionCount === "number" &&
+    Number.isFinite(body.questionCount)
+      ? Math.max(1, Math.floor(body.questionCount))
+      : 20;
+  const parentId =
+    typeof body.parentId === "number" && Number.isFinite(body.parentId)
+      ? body.parentId
+      : null;
+  const customPrompt =
+    typeof body.customPrompt === "string" ? body.customPrompt : undefined;
 
   if (!text || text.trim().length < 10) {
-    res.status(400).json({ error: "Text is too short to generate questions from." });
+    res
+      .status(400)
+      .json({ error: "Text is too short to generate questions from." });
     return;
   }
   if (!deckName) {
@@ -1130,27 +1394,58 @@ router.post("/generate-qbank", async (req, res, next): Promise<void> => {
     openai = await getOpenAIClient();
   } catch (error) {
     req.log.error({ err: error }, "AI question bank generation failed");
-    res.status(503).json({ error: error instanceof Error ? error.message : "AI question bank generation failed." });
+    res
+      .status(503)
+      .json({
+        error:
+          error instanceof Error
+            ? error.message
+            : "AI question bank generation failed.",
+      });
     return;
   }
 
   let questions: RawCard[] = [];
   try {
-    questions = await generateQbankCards(openai, text, questionCount, req.log, undefined, customPrompt);
+    questions = await generateQbankCards(
+      openai,
+      text,
+      questionCount,
+      req.log,
+      undefined,
+      customPrompt,
+    );
   } catch (error) {
     req.log.error({ err: error }, "AI question bank generation failed");
     const status = getErrorStatus(error);
     const code = getErrorCode(error);
     if (status === 429 || code === "too_many_requests") {
-      res.status(429).json({ error: "AI is temporarily rate-limited. Wait a minute and try again." });
+      res
+        .status(429)
+        .json({
+          error: "AI is temporarily rate-limited. Wait a minute and try again.",
+        });
       return;
     }
-    res.status(503).json({ error: error instanceof Error ? error.message : "AI question bank generation failed." });
+    res
+      .status(503)
+      .json({
+        error:
+          error instanceof Error
+            ? error.message
+            : "AI question bank generation failed.",
+      });
     return;
   }
 
   // Keep only valid MCQs
-  const filtered = questions.filter(c => c.type === "mcq" && Array.isArray(c.choices) && c.choices.length >= 2 && typeof c.correctIndex === "number");
+  const filtered = questions.filter(
+    (c) =>
+      c.type === "mcq" &&
+      Array.isArray(c.choices) &&
+      c.choices.length >= 2 &&
+      typeof c.correctIndex === "number",
+  );
   if (filtered.length === 0) {
     res.status(500).json({ error: "AI did not generate any usable MCQs." });
     return;
@@ -1167,7 +1462,7 @@ router.post("/generate-qbank", async (req, res, next): Promise<void> => {
       return;
     }
 
-    const cardRows: (typeof cardsTable.$inferInsert)[] = filtered.map(c => ({
+    const cardRows: (typeof cardsTable.$inferInsert)[] = filtered.map((c) => ({
       deckId: primaryDeck.id,
       front: c.front,
       back: c.back,
@@ -1181,7 +1476,11 @@ router.post("/generate-qbank", async (req, res, next): Promise<void> => {
     const inserted = await db.insert(cardsTable).values(cardRows).returning();
 
     res.status(201).json({
-      deck: { ...primaryDeck, cardCount: inserted.length, createdAt: primaryDeck.createdAt.toISOString() },
+      deck: {
+        ...primaryDeck,
+        cardCount: inserted.length,
+        createdAt: primaryDeck.createdAt.toISOString(),
+      },
       cards: inserted.map(serializeCard),
       generatedCount: inserted.length,
     });
@@ -1200,17 +1499,24 @@ router.post("/generate-qbank/stream", async (req, res): Promise<void> => {
   };
 
   const text = typeof body.text === "string" ? body.text : "";
-  const deckName = typeof body.deckName === "string" ? body.deckName.trim() : "";
-  const questionCount = typeof body.questionCount === "number" && Number.isFinite(body.questionCount)
-    ? Math.max(1, Math.floor(body.questionCount))
-    : 20;
-  const parentId = typeof body.parentId === "number" && Number.isFinite(body.parentId)
-    ? body.parentId
-    : null;
-  const customPrompt = typeof body.customPrompt === "string" ? body.customPrompt : undefined;
+  const deckName =
+    typeof body.deckName === "string" ? body.deckName.trim() : "";
+  const questionCount =
+    typeof body.questionCount === "number" &&
+    Number.isFinite(body.questionCount)
+      ? Math.max(1, Math.floor(body.questionCount))
+      : 20;
+  const parentId =
+    typeof body.parentId === "number" && Number.isFinite(body.parentId)
+      ? body.parentId
+      : null;
+  const customPrompt =
+    typeof body.customPrompt === "string" ? body.customPrompt : undefined;
 
   if (!text || text.trim().length < 10) {
-    res.status(400).json({ error: "Text is too short to generate questions from." });
+    res
+      .status(400)
+      .json({ error: "Text is too short to generate questions from." });
     return;
   }
   if (!deckName) {
@@ -1225,7 +1531,11 @@ router.post("/generate-qbank/stream", async (req, res): Promise<void> => {
   res.flushHeaders();
 
   const heartbeat = setInterval(() => {
-    try { res.write(`: ping ${Date.now()}\n\n`); } catch { /* socket closed */ }
+    try {
+      res.write(`: ping ${Date.now()}\n\n`);
+    } catch {
+      /* socket closed */
+    }
   }, 12_000);
   const stopHeartbeat = () => clearInterval(heartbeat);
   res.on("close", stopHeartbeat);
@@ -1235,7 +1545,10 @@ router.post("/generate-qbank/stream", async (req, res): Promise<void> => {
   try {
     openai = await getOpenAIClient();
   } catch (error) {
-    sseEmit(res, { type: "error", message: error instanceof Error ? error.message : "AI not configured." });
+    sseEmit(res, {
+      type: "error",
+      message: error instanceof Error ? error.message : "AI not configured.",
+    });
     res.end();
     return;
   }
@@ -1261,37 +1574,65 @@ router.post("/generate-qbank/stream", async (req, res): Promise<void> => {
           percent: pct,
           message: `Writing MCQs… (${done}/${total} chunks)`,
         });
-      }
+      },
     );
   } catch (error) {
     req.off("close", onClientClose);
     if (isAbortError(error) || abortController.signal.aborted) {
       req.log.info("AI question bank generation cancelled by client");
-      try { sseEmit(res, { type: "error", message: "Cancelled" }); } catch { /* ignore */ }
-      try { res.end(); } catch { /* ignore */ }
+      try {
+        sseEmit(res, { type: "error", message: "Cancelled" });
+      } catch {
+        /* ignore */
+      }
+      try {
+        res.end();
+      } catch {
+        /* ignore */
+      }
       return;
     }
     req.log.error({ err: error }, "AI question bank generation failed");
     const status = getErrorStatus(error);
     const code = getErrorCode(error);
-    const msg = (status === 429 || code === "too_many_requests")
-      ? "AI is temporarily rate-limited. Wait a minute and try again."
-      : (error instanceof Error ? error.message : "AI question bank generation failed.");
+    const msg =
+      status === 429 || code === "too_many_requests"
+        ? "AI is temporarily rate-limited. Wait a minute and try again."
+        : error instanceof Error
+          ? error.message
+          : "AI question bank generation failed.";
     sseEmit(res, { type: "error", message: msg });
     res.end();
     return;
   }
   req.off("close", onClientClose);
   if (abortController.signal.aborted) {
-    try { res.end(); } catch { /* ignore */ }
+    try {
+      res.end();
+    } catch {
+      /* ignore */
+    }
     return;
   }
 
-  sseEmit(res, { type: "progress", percent: 85, message: "Saving question bank…" });
+  sseEmit(res, {
+    type: "progress",
+    percent: 85,
+    message: "Saving question bank…",
+  });
 
-  const filtered = questions.filter(c => c.type === "mcq" && Array.isArray(c.choices) && c.choices.length >= 2 && typeof c.correctIndex === "number");
+  const filtered = questions.filter(
+    (c) =>
+      c.type === "mcq" &&
+      Array.isArray(c.choices) &&
+      c.choices.length >= 2 &&
+      typeof c.correctIndex === "number",
+  );
   if (filtered.length === 0) {
-    sseEmit(res, { type: "error", message: "AI did not generate any usable MCQs." });
+    sseEmit(res, {
+      type: "error",
+      message: "AI did not generate any usable MCQs.",
+    });
     res.end();
     return;
   }
@@ -1308,7 +1649,7 @@ router.post("/generate-qbank/stream", async (req, res): Promise<void> => {
       return;
     }
 
-    const cardRows: (typeof cardsTable.$inferInsert)[] = filtered.map(c => ({
+    const cardRows: (typeof cardsTable.$inferInsert)[] = filtered.map((c) => ({
       deckId: primaryDeck.id,
       front: c.front,
       back: c.back,
@@ -1324,12 +1665,20 @@ router.post("/generate-qbank/stream", async (req, res): Promise<void> => {
     sseEmit(res, {
       type: "done",
       generatedCount: inserted.length,
-      deck: { ...primaryDeck, cardCount: inserted.length, createdAt: primaryDeck.createdAt.toISOString() },
+      deck: {
+        ...primaryDeck,
+        cardCount: inserted.length,
+        createdAt: primaryDeck.createdAt.toISOString(),
+      },
     });
     res.end();
   } catch (err) {
     req.log.error({ err }, "Question bank insert failed");
-    sseEmit(res, { type: "error", message: err instanceof Error ? err.message : "Failed to save question bank." });
+    sseEmit(res, {
+      type: "error",
+      message:
+        err instanceof Error ? err.message : "Failed to save question bank.",
+    });
     res.end();
   }
 });
@@ -1341,29 +1690,50 @@ router.post("/generate", async (req, res, next): Promise<void> => {
     return;
   }
 
-  const { text, deckName, cardCount = 20, visualCardCount, parentId, pageImages, pageTexts, deckType: rawDeckType, customPrompt } = parsed.data;
+  const {
+    text,
+    deckName,
+    cardCount = 20,
+    visualCardCount,
+    parentId,
+    pageImages,
+    pageTexts,
+    deckType: rawDeckType,
+    customPrompt,
+  } = parsed.data;
 
   if (!text || text.trim().length < 10) {
-    res.status(400).json({ error: "Text is too short to generate cards from." });
+    res
+      .status(400)
+      .json({ error: "Text is too short to generate cards from." });
     return;
   }
 
-  const selectedImages = Array.isArray(pageImages) && pageImages.length > 0
-    ? pageImages.slice(0, MAX_PAGE_IMAGES)
-    : [];
+  const selectedImages =
+    Array.isArray(pageImages) && pageImages.length > 0
+      ? pageImages.slice(0, MAX_PAGE_IMAGES)
+      : [];
   const hasImages = selectedImages.length > 0;
   const deckType = resolveDeckType(rawDeckType, hasImages);
   const wantText = deckType === "text" || deckType === "both";
-  const wantVisual = (deckType === "visual" || deckType === "both") && hasImages;
+  const wantVisual =
+    (deckType === "visual" || deckType === "both") && hasImages;
   const maxTextCards = wantText ? Math.max(cardCount, 1) : 0;
-  const maxVisualCards = wantVisual ? Math.max(visualCardCount ?? cardCount, 1) : 0;
+  const maxVisualCards = wantVisual
+    ? Math.max(visualCardCount ?? cardCount, 1)
+    : 0;
 
   let openai: Awaited<ReturnType<typeof getOpenAIClient>>;
   try {
     openai = await getOpenAIClient();
   } catch (error) {
     req.log.error({ err: error }, "AI card generation failed");
-    res.status(503).json({ error: error instanceof Error ? error.message : "AI card generation failed." });
+    res
+      .status(503)
+      .json({
+        error:
+          error instanceof Error ? error.message : "AI card generation failed.",
+      });
     return;
   }
 
@@ -1372,25 +1742,57 @@ router.post("/generate", async (req, res, next): Promise<void> => {
 
   try {
     [textCards, visualCards] = await Promise.all([
-      wantText ? generateTextCards(openai, text, maxTextCards, req.log, undefined, customPrompt, undefined, pageTexts) : Promise.resolve([] as RawCard[]),
-      wantVisual ? generateAllVisualCards(openai, selectedImages, maxVisualCards, req.log, undefined, undefined, customPrompt) : Promise.resolve([]),
+      wantText
+        ? generateTextCards(
+            openai,
+            text,
+            maxTextCards,
+            req.log,
+            undefined,
+            customPrompt,
+            undefined,
+            pageTexts,
+          )
+        : Promise.resolve([] as RawCard[]),
+      wantVisual
+        ? generateAllVisualCards(
+            openai,
+            selectedImages,
+            maxVisualCards,
+            req.log,
+            undefined,
+            undefined,
+            customPrompt,
+          )
+        : Promise.resolve([]),
     ]);
   } catch (error) {
     req.log.error({ err: error }, "AI card generation failed");
     const status = getErrorStatus(error);
     const code = getErrorCode(error);
     if (status === 429 || code === "too_many_requests") {
-      res.status(429).json({ error: "AI is temporarily rate-limited. Wait a minute and try again." });
+      res
+        .status(429)
+        .json({
+          error: "AI is temporarily rate-limited. Wait a minute and try again.",
+        });
       return;
     }
-    res.status(503).json({ error: error instanceof Error ? error.message : "AI card generation failed." });
+    res
+      .status(503)
+      .json({
+        error:
+          error instanceof Error ? error.message : "AI card generation failed.",
+      });
     return;
   }
 
   const filteredText = textCards
-    .map(c => normalizeCard(c))
+    .map((c) => normalizeCard(c))
     .filter((c): c is RawCard => c !== null);
-  const filteredVisual = visualCards.filter(c => c.front.length > 0 && c.back.length > 0);
+  const filteredVisual = visualCards.filter(
+    (c) => c.front.length > 0 && c.back.length > 0,
+  );
 
   if (filteredText.length === 0 && filteredVisual.length === 0) {
     res.status(500).json({ error: "AI did not generate any cards." });
@@ -1410,33 +1812,44 @@ router.post("/generate", async (req, res, next): Promise<void> => {
     }
 
     const cardRows: (typeof cardsTable.$inferInsert)[] = [
-      ...filteredText.map(c => ({
+      ...filteredText.map((c) => ({
         deckId: primaryDeck.id,
         front: c.front,
         back: c.back,
         image: null,
         cardType: c.type === "mcq" ? ("mcq" as const) : ("basic" as const),
-        choices: c.type === "mcq" && c.choices ? JSON.stringify(c.choices) : null,
-        correctIndex: c.type === "mcq" && typeof c.correctIndex === "number" ? c.correctIndex : null,
+        choices:
+          c.type === "mcq" && c.choices ? JSON.stringify(c.choices) : null,
+        correctIndex:
+          c.type === "mcq" && typeof c.correctIndex === "number"
+            ? c.correctIndex
+            : null,
         pageNumber: c.pageNumber ?? null,
       })),
-      ...filteredVisual.map(c => ({
+      ...filteredVisual.map((c) => ({
         deckId: primaryDeck.id,
         front: c.front,
         back: c.back,
-        image: c.image.startsWith("data:") ? c.image : `data:image/jpeg;base64,${c.image}`,
+        image: c.image.startsWith("data:")
+          ? c.image
+          : `data:image/jpeg;base64,${c.image}`,
         sourceImage: c.sourceImage ?? null,
         bbox: c.bbox ? JSON.stringify(c.bbox) : null,
         pageNumber: c.pageNumber ?? null,
       })),
     ];
 
-    const allInserted = cardRows.length > 0
-      ? await db.insert(cardsTable).values(cardRows).returning()
-      : [];
+    const allInserted =
+      cardRows.length > 0
+        ? await db.insert(cardsTable).values(cardRows).returning()
+        : [];
 
     res.status(201).json({
-      deck: { ...primaryDeck, cardCount: allInserted.length, createdAt: primaryDeck.createdAt.toISOString() },
+      deck: {
+        ...primaryDeck,
+        cardCount: allInserted.length,
+        createdAt: primaryDeck.createdAt.toISOString(),
+      },
       cards: allInserted.map(serializeCard),
       generatedCount: allInserted.length,
     });

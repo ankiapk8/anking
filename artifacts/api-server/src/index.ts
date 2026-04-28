@@ -11,20 +11,21 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function main(): Promise<void> {
+  logger.info("Initializing database schema...");
   await ensureDatabaseSchema();
 
-  app.listen(port, (err) => {
-    if (err) {
-      logger.error({ err }, "Error listening on port");
-      process.exit(1);
-    }
-
+  const server = app.listen(port, () => {
     logger.info({ port }, "Server listening");
     try {
       autoConfigureFromEnv();
     } catch (err) {
       logger.warn({ err }, "APK auto-configure failed (non-fatal)");
     }
+  });
+
+  server.on("error", (err) => {
+    logger.error({ err }, "Error listening on port");
+    process.exit(1);
   });
 }
 

@@ -29,7 +29,11 @@ let storedDeployedUrl = null;
 if (fs.existsSync(DEPLOYMENT_CONFIG_PATH)) {
   try {
     const stored = JSON.parse(fs.readFileSync(DEPLOYMENT_CONFIG_PATH, "utf8"));
-    if (stored && typeof stored.deployedUrl === "string" && stored.deployedUrl.trim()) {
+    if (
+      stored &&
+      typeof stored.deployedUrl === "string" &&
+      stored.deployedUrl.trim()
+    ) {
       storedDeployedUrl = stored.deployedUrl.trim();
     }
   } catch (err) {
@@ -63,10 +67,10 @@ const ORIGIN = `https://${HOST}`;
 const sourceLabel = process.env.APK_TARGET_URL
   ? "APK_TARGET_URL env"
   : storedDeployedUrl
-  ? "build-apk/deployment.json"
-  : process.env.REPLIT_DEPLOYMENT_DOMAIN
-  ? "REPLIT_DEPLOYMENT_DOMAIN env"
-  : "REPLIT_DEV_DOMAIN env";
+    ? "build-apk/deployment.json"
+    : process.env.REPLIT_DEPLOYMENT_DOMAIN
+      ? "REPLIT_DEPLOYMENT_DOMAIN env"
+      : "REPLIT_DEV_DOMAIN env";
 log.info(`Target URL: ${ORIGIN}  (source: ${sourceLabel})`);
 
 // Additional hosts the APK should also trust (so the same APK works on both
@@ -99,16 +103,24 @@ const config = new Config(
 );
 
 log.info("Loading manifest from", `${ORIGIN}/manifest.webmanifest`);
-const twaManifest = await TwaManifest.fromWebManifest(`${ORIGIN}/manifest.webmanifest`);
+const twaManifest = await TwaManifest.fromWebManifest(
+  `${ORIGIN}/manifest.webmanifest`,
+);
 
 twaManifest.packageId = "app.replit.ankicards";
 twaManifest.name = "Anki Card Generator";
 twaManifest.launcherName = "Anki Cards";
 twaManifest.appVersionName = "1.0.0";
 twaManifest.appVersionCode = 1;
-twaManifest.themeColor = (await import("/home/runner/workspace/.config/npm/node_global/lib/node_modules/@bubblewrap/cli/node_modules/color/index.js")).default("#22C55E");
-twaManifest.navigationColor = (await import("/home/runner/workspace/.config/npm/node_global/lib/node_modules/@bubblewrap/cli/node_modules/color/index.js")).default("#22C55E");
-twaManifest.backgroundColor = (await import("/home/runner/workspace/.config/npm/node_global/lib/node_modules/@bubblewrap/cli/node_modules/color/index.js")).default("#0B0B0F");
+twaManifest.themeColor = (
+  await import("/home/runner/workspace/.config/npm/node_global/lib/node_modules/@bubblewrap/cli/node_modules/color/index.js")
+).default("#22C55E");
+twaManifest.navigationColor = (
+  await import("/home/runner/workspace/.config/npm/node_global/lib/node_modules/@bubblewrap/cli/node_modules/color/index.js")
+).default("#22C55E");
+twaManifest.backgroundColor = (
+  await import("/home/runner/workspace/.config/npm/node_global/lib/node_modules/@bubblewrap/cli/node_modules/color/index.js")
+).default("#0B0B0F");
 twaManifest.host = HOST;
 twaManifest.startUrl = "/";
 twaManifest.iconUrl = `${ORIGIN}/icons/icon-512.png`;
@@ -136,14 +148,22 @@ await gen.createTwaProject(PROJECT_DIR, twaManifest, log);
 log.info("Project generated");
 
 const jdkHelper = new JdkHelper(process, config);
-const androidSdk = await AndroidSdkTools.create(process, config, jdkHelper, log);
+const androidSdk = await AndroidSdkTools.create(
+  process,
+  config,
+  jdkHelper,
+  log,
+);
 const gradle = new GradleWrapper(process, androidSdk, PROJECT_DIR);
 
 log.info("Building APK with Gradle (this takes a while)");
 await gradle.assembleRelease();
 log.info("Gradle build done");
 
-const unsignedApk = path.join(PROJECT_DIR, "app/build/outputs/apk/release/app-release-unsigned.apk");
+const unsignedApk = path.join(
+  PROJECT_DIR,
+  "app/build/outputs/apk/release/app-release-unsigned.apk",
+);
 const finalApk = path.resolve("./anki-cards.apk");
 
 log.info("Zipalign + sign");

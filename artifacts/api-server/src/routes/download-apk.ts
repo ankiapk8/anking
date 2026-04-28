@@ -21,8 +21,14 @@ const router: IRouter = Router();
 
 function isPublicHost(host: string | null): host is string {
   if (!host) return false;
-  if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") return false;
-  if (host.startsWith("172.") || host.startsWith("10.") || host.startsWith("192.168.")) return false;
+  if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0")
+    return false;
+  if (
+    host.startsWith("172.") ||
+    host.startsWith("10.") ||
+    host.startsWith("192.168.")
+  )
+    return false;
   return host.includes(".");
 }
 
@@ -39,7 +45,10 @@ function slotSummary(slot: Slot) {
     host,
     apk: meta,
     matches: host ? apkMatchesHost(slot, host) : false,
-    upToDate: !!meta?.sourceHash && meta.sourceHash === sourceHash && (!host || meta?.host === host),
+    upToDate:
+      !!meta?.sourceHash &&
+      meta.sourceHash === sourceHash &&
+      (!host || meta?.host === host),
     build: getBuildState(slot),
     history: getBuildHistory(3, slot),
   };
@@ -51,10 +60,13 @@ router.get("/download-apk/status", (_req, res) => {
     publishedHost: getStoredTargetHost("published"),
     devHost: getStoredTargetHost("dev"),
     builds: getAllBuildStates(),
-    slots: SLOTS.reduce((acc, s) => {
-      acc[s] = slotSummary(s);
-      return acc;
-    }, {} as Record<Slot, ReturnType<typeof slotSummary>>),
+    slots: SLOTS.reduce(
+      (acc, s) => {
+        acc[s] = slotSummary(s);
+        return acc;
+      },
+      {} as Record<Slot, ReturnType<typeof slotSummary>>,
+    ),
   });
 });
 
@@ -62,18 +74,36 @@ router.post("/download-apk/configure", (req, res) => {
   const body = (req.body ?? {}) as { host?: unknown; slot?: unknown };
   const slot = parseSlot(body.slot, "published");
   let raw = typeof body.host === "string" ? body.host.trim() : "";
-  raw = raw.replace(/^https?:\/\//i, "").replace(/\/.*$/, "").replace(/:\d+$/, "");
+  raw = raw
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "");
   if (!isPublicHost(raw)) {
-    res.status(400).json({ error: "Please provide a public hostname like myapp.replit.app" });
+    res
+      .status(400)
+      .json({
+        error: "Please provide a public hostname like myapp.replit.app",
+      });
     return;
   }
   setStoredTargetHost(raw, slot);
   const build = startRebuild(slot, raw);
-  res.status(202).json({ slot, host: raw, publishedHost: getStoredTargetHost("published"), devHost: getStoredTargetHost("dev"), build });
+  res
+    .status(202)
+    .json({
+      slot,
+      host: raw,
+      publishedHost: getStoredTargetHost("published"),
+      devHost: getStoredTargetHost("dev"),
+      build,
+    });
 });
 
 router.post("/download-apk/rebuild", (req, res) => {
-  const slot = parseSlot((req.body as Record<string, unknown> | undefined)?.slot ?? req.query?.slot, "dev");
+  const slot = parseSlot(
+    (req.body as Record<string, unknown> | undefined)?.slot ?? req.query?.slot,
+    "dev",
+  );
   const host = resolveHostForSlot(slot);
   if (!host) {
     res.status(400).json({ error: `No host configured for slot "${slot}"` });

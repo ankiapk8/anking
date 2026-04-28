@@ -98,7 +98,11 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
                 <motion.div
                   className="relative w-32 h-32 rounded-3xl shadow-2xl overflow-hidden flex items-center justify-center"
                   animate={{ scale: [1, 1.04, 1] }}
-                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{
+                    duration: 2.4,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
                 >
                   <img
                     src={LOGO_URL}
@@ -158,9 +162,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      <div style={{ visibility: show ? "hidden" : "visible" }}>
-        {children}
-      </div>
+      <div style={{ visibility: show ? "hidden" : "visible" }}>{children}</div>
     </>
   );
 }

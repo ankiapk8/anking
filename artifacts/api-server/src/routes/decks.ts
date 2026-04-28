@@ -30,7 +30,9 @@ router.get("/decks", async (_req, res, next): Promise<void> => {
       .groupBy(decksTable.id)
       .orderBy(decksTable.createdAt);
 
-    res.json(decks.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })));
+    res.json(
+      decks.map((d) => ({ ...d, createdAt: d.createdAt.toISOString() })),
+    );
   } catch (err) {
     next(err);
   }
@@ -109,7 +111,10 @@ router.get("/decks/:id", async (req, res, next): Promise<void> => {
     res.json({
       ...row,
       createdAt: row.createdAt.toISOString(),
-      subDecks: subDecks.map(s => ({ ...s, createdAt: s.createdAt.toISOString() })),
+      subDecks: subDecks.map((s) => ({
+        ...s,
+        createdAt: s.createdAt.toISOString(),
+      })),
     });
   } catch (err) {
     next(err);
@@ -119,18 +124,29 @@ router.get("/decks/:id", async (req, res, next): Promise<void> => {
 router.patch("/decks/:id", async (req, res, next): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
 
   const parsed = UpdateDeckBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
 
-  const updates: Partial<typeof decksTable.$inferInsert> & { updatedAt?: Date } = {
+  const updates: Partial<typeof decksTable.$inferInsert> & {
+    updatedAt?: Date;
+  } = {
     updatedAt: new Date(),
   };
   if (parsed.data.name !== undefined) updates.name = parsed.data.name;
-  if ("description" in parsed.data) updates.description = parsed.data.description ?? undefined;
-  if ("parentId" in parsed.data) updates.parentId = parsed.data.parentId ?? undefined;
-  if (parsed.data.kind !== undefined) updates.kind = parsed.data.kind === "qbank" ? "qbank" : "deck";
+  if ("description" in parsed.data)
+    updates.description = parsed.data.description ?? undefined;
+  if ("parentId" in parsed.data)
+    updates.parentId = parsed.data.parentId ?? undefined;
+  if (parsed.data.kind !== undefined)
+    updates.kind = parsed.data.kind === "qbank" ? "qbank" : "deck";
 
   if (Object.keys(updates).length <= 1) {
     res.status(400).json({ error: "No fields to update" });
@@ -144,7 +160,10 @@ router.patch("/decks/:id", async (req, res, next): Promise<void> => {
       .where(eq(decksTable.id, id))
       .returning();
 
-    if (!updated) { res.status(404).json({ error: "Deck not found" }); return; }
+    if (!updated) {
+      res.status(404).json({ error: "Deck not found" });
+      return;
+    }
 
     const [row] = await db
       .select({
@@ -176,11 +195,16 @@ router.post("/decks/merge", async (req, res, next): Promise<void> => {
   };
 
   const deckIds = Array.isArray(body.deckIds)
-    ? body.deckIds.map(v => Number(v)).filter(n => Number.isInteger(n) && n > 0)
+    ? body.deckIds
+        .map((v) => Number(v))
+        .filter((n) => Number.isInteger(n) && n > 0)
     : [];
-  const newDeckName = typeof body.newDeckName === "string" ? body.newDeckName.trim() : "";
+  const newDeckName =
+    typeof body.newDeckName === "string" ? body.newDeckName.trim() : "";
   const parentId =
-    typeof body.parentId === "number" && Number.isInteger(body.parentId) ? body.parentId : null;
+    typeof body.parentId === "number" && Number.isInteger(body.parentId)
+      ? body.parentId
+      : null;
   const deleteOriginals = body.deleteOriginals === true;
 
   if (deckIds.length < 2) {
@@ -194,7 +218,7 @@ router.post("/decks/merge", async (req, res, next): Promise<void> => {
 
   try {
     const allDecks = await db.select().from(decksTable);
-    const byId = new Map(allDecks.map(d => [d.id, d] as const));
+    const byId = new Map(allDecks.map((d) => [d.id, d] as const));
     const childrenByParent = new Map<number, number[]>();
     for (const d of allDecks) {
       if (d.parentId == null) continue;
@@ -219,7 +243,12 @@ router.post("/decks/merge", async (req, res, next): Promise<void> => {
     }
 
     if (parentId !== null && sourceIds.has(parentId)) {
-      res.status(400).json({ error: "Cannot place the merged deck inside a deck that's being merged." });
+      res
+        .status(400)
+        .json({
+          error:
+            "Cannot place the merged deck inside a deck that's being merged.",
+        });
       return;
     }
 
@@ -230,7 +259,9 @@ router.post("/decks/merge", async (req, res, next): Promise<void> => {
       .orderBy(cardsTable.createdAt);
 
     if (sourceCards.length === 0) {
-      res.status(400).json({ error: "Selected decks contain no cards to merge." });
+      res
+        .status(400)
+        .json({ error: "Selected decks contain no cards to merge." });
       return;
     }
 
@@ -239,14 +270,14 @@ router.post("/decks/merge", async (req, res, next): Promise<void> => {
       .values({
         name: newDeckName,
         description: `Merged from ${deckIds.length} deck${deckIds.length === 1 ? "" : "s"}: ${deckIds
-          .map(id => byId.get(id)?.name ?? `#${id}`)
+          .map((id) => byId.get(id)?.name ?? `#${id}`)
           .join(", ")}`,
         parentId,
       })
       .returning();
 
     await db.insert(cardsTable).values(
-      sourceCards.map(c => ({
+      sourceCards.map((c) => ({
         deckId: mergedDeck.id,
         front: c.front,
         back: c.back,
@@ -280,10 +311,14 @@ router.delete("/decks/:id", async (req, res, next): Promise<void> => {
   }
 
   try {
-    const allDecks = await db.select({ id: decksTable.id, parentId: decksTable.parentId }).from(decksTable);
+    const allDecks = await db
+      .select({ id: decksTable.id, parentId: decksTable.parentId })
+      .from(decksTable);
 
     function collectDescendants(parentId: number): number[] {
-      const direct = allDecks.filter(d => d.parentId === parentId).map(d => d.id);
+      const direct = allDecks
+        .filter((d) => d.parentId === parentId)
+        .map((d) => d.id);
       return [...direct, ...direct.flatMap(collectDescendants)];
     }
 
@@ -318,8 +353,11 @@ router.get("/decks/:id/cards", async (req, res, next): Promise<void> => {
     const allDecks = await db.select().from(decksTable);
 
     function collectDescendantIds(parentId: number): number[] {
-      const children = allDecks.filter(d => d.parentId === parentId);
-      return [...children.map(d => d.id), ...children.flatMap(d => collectDescendantIds(d.id))];
+      const children = allDecks.filter((d) => d.parentId === parentId);
+      return [
+        ...children.map((d) => d.id),
+        ...children.flatMap((d) => collectDescendantIds(d.id)),
+      ];
     }
 
     const descendantIds = collectDescendantIds(deckId);
@@ -329,7 +367,10 @@ router.get("/decks/:id/cards", async (req, res, next): Promise<void> => {
       .select()
       .from(cardsTable)
       .where(inArray(cardsTable.deckId, allDeckIds))
-      .orderBy(sql`${cardsTable.pageNumber} ASC NULLS LAST`, cardsTable.createdAt);
+      .orderBy(
+        sql`${cardsTable.pageNumber} ASC NULLS LAST`,
+        cardsTable.createdAt,
+      );
 
     res.json(cards.map(serializeCard));
   } catch (err) {
@@ -360,16 +401,23 @@ router.get("/decks/:id/export", async (req, res, next): Promise<void> => {
       .select()
       .from(cardsTable)
       .where(eq(cardsTable.deckId, params.data.id))
-      .orderBy(sql`${cardsTable.pageNumber} ASC NULLS LAST`, cardsTable.createdAt);
+      .orderBy(
+        sql`${cardsTable.pageNumber} ASC NULLS LAST`,
+        cardsTable.createdAt,
+      );
 
-    const rows = cards.map(c => {
+    const rows = cards.map((c) => {
       const front = c.front.replace(/\t/g, " ").replace(/\n/g, "<br>");
       const back = c.back.replace(/\t/g, " ").replace(/\n/g, "<br>");
       const tags = c.tags ? c.tags.replace(/\t/g, " ") : "";
       return tags ? `${front}\t${back}\t${tags}` : `${front}\t${back}`;
     });
 
-    res.json({ deckName: deck.name, csv: rows.join("\n"), cardCount: cards.length });
+    res.json({
+      deckName: deck.name,
+      csv: rows.join("\n"),
+      cardCount: cards.length,
+    });
   } catch (err) {
     next(err);
   }

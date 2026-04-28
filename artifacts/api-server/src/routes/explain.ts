@@ -5,14 +5,21 @@ const router: IRouter = Router();
 type ExplainMode = "full" | "revision" | "osce";
 
 async function getOpenAIClient() {
-  if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || !process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+  if (
+    !process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ||
+    !process.env.AI_INTEGRATIONS_OPENAI_API_KEY
+  ) {
     throw new Error("AI explanation is not configured yet.");
   }
   const { openai } = await import("@workspace/integrations-openai-ai-server");
   return openai;
 }
 
-function buildPrompts(mode: ExplainMode, front: string, back: string): { system: string; user: string; maxTokens: number } {
+function buildPrompts(
+  mode: ExplainMode,
+  front: string,
+  back: string,
+): { system: string; user: string; maxTokens: number } {
   const topic = `${front}: ${back}`;
 
   if (mode === "full") {
@@ -106,7 +113,11 @@ STYLE:
 }
 
 router.post("/explain", async (req, res): Promise<void> => {
-  const { front, back, mode = "full" } = req.body as { front?: string; back?: string; mode?: ExplainMode };
+  const {
+    front,
+    back,
+    mode = "full",
+  } = req.body as { front?: string; back?: string; mode?: ExplainMode };
 
   if (!front || !back) {
     res.status(400).json({ error: "front and back are required." });
@@ -114,15 +125,25 @@ router.post("/explain", async (req, res): Promise<void> => {
   }
 
   const validModes: ExplainMode[] = ["full", "revision", "osce"];
-  const resolvedMode: ExplainMode = validModes.includes(mode as ExplainMode) ? (mode as ExplainMode) : "full";
+  const resolvedMode: ExplainMode = validModes.includes(mode as ExplainMode)
+    ? (mode as ExplainMode)
+    : "full";
 
-  const { system: systemPrompt, user: userPrompt, maxTokens } = buildPrompts(resolvedMode, front, back);
+  const {
+    system: systemPrompt,
+    user: userPrompt,
+    maxTokens,
+  } = buildPrompts(resolvedMode, front, back);
 
   let openai;
   try {
     openai = await getOpenAIClient();
   } catch (err) {
-    res.status(503).json({ error: err instanceof Error ? err.message : "AI not configured." });
+    res
+      .status(503)
+      .json({
+        error: err instanceof Error ? err.message : "AI not configured.",
+      });
     return;
   }
 
@@ -131,7 +152,9 @@ router.post("/explain", async (req, res): Promise<void> => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("X-Accel-Buffering", "no");
-  if (typeof (res as { flushHeaders?: () => void }).flushHeaders === "function") {
+  if (
+    typeof (res as { flushHeaders?: () => void }).flushHeaders === "function"
+  ) {
     (res as { flushHeaders: () => void }).flushHeaders();
   }
 

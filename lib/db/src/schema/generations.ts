@@ -10,7 +10,9 @@ export const generationsTable = pgTable("generations", {
   durationMs: integer("duration_ms").notNull().default(0),
   customPrompt: text("custom_prompt"),
   errorMessage: text("error_message"),
-  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  startedAt: timestamp("started_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
 });
 

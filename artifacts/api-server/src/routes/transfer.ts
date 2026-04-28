@@ -35,15 +35,15 @@ type ExportedFile = {
 function buildNode(
   deckId: number,
   allDecks: (typeof decksTable.$inferSelect)[],
-  cardsByDeck: Map<number, (typeof cardsTable.$inferSelect)[]>
+  cardsByDeck: Map<number, (typeof cardsTable.$inferSelect)[]>,
 ): ExportedNode {
-  const deck = allDecks.find(d => d.id === deckId)!;
-  const children = allDecks.filter(d => d.parentId === deckId);
+  const deck = allDecks.find((d) => d.id === deckId)!;
+  const children = allDecks.filter((d) => d.parentId === deckId);
   const cards = cardsByDeck.get(deckId) ?? [];
   return {
     name: deck.name,
     description: deck.description ?? null,
-    cards: cards.map(c => ({
+    cards: cards.map((c) => ({
       front: c.front,
       back: c.back,
       tags: c.tags ?? null,
@@ -53,7 +53,7 @@ function buildNode(
       correctIndex: c.correctIndex ?? null,
       pageNumber: c.pageNumber ?? null,
     })),
-    subDecks: children.map(c => buildNode(c.id, allDecks, cardsByDeck)),
+    subDecks: children.map((c) => buildNode(c.id, allDecks, cardsByDeck)),
   };
 }
 
@@ -61,15 +61,23 @@ router.get("/export-all-json", async (_req, res, next): Promise<void> => {
   try {
     const allDecks = await db.select().from(decksTable);
     const topLevel = allDecks
-      .filter(d => d.parentId === null)
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+      .filter((d) => d.parentId === null)
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        }),
+      );
 
     if (topLevel.length === 0) {
       res.status(404).json({ error: "No decks to export." });
       return;
     }
 
-    const cards = await db.select().from(cardsTable).orderBy(cardsTable.createdAt);
+    const cards = await db
+      .select()
+      .from(cardsTable)
+      .orderBy(cardsTable.createdAt);
     const cardsByDeck = new Map<number, (typeof cardsTable.$inferSelect)[]>();
     for (const c of cards) {
       const list = cardsByDeck.get(c.deckId) ?? [];
@@ -81,14 +89,14 @@ router.get("/export-all-json", async (_req, res, next): Promise<void> => {
       format: "ankigen-deck",
       version: FORMAT_VERSION,
       exportedAt: new Date().toISOString(),
-      roots: topLevel.map(d => buildNode(d.id, allDecks, cardsByDeck)),
+      roots: topLevel.map((d) => buildNode(d.id, allDecks, cardsByDeck)),
     };
 
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="ankigen-library-${stamp}.ankigen.json"`
+      `attachment; filename="ankigen-library-${stamp}.ankigen.json"`,
     );
     res.end(JSON.stringify(file, null, 2));
   } catch (err) {
@@ -106,14 +114,16 @@ router.get("/decks/:id/export-json", async (req, res, next): Promise<void> => {
 
   try {
     const allDecks = await db.select().from(decksTable);
-    const root = allDecks.find(d => d.id === id);
+    const root = allDecks.find((d) => d.id === id);
     if (!root) {
       res.status(404).json({ error: "Deck not found" });
       return;
     }
 
     function descendantIds(parentId: number): number[] {
-      const direct = allDecks.filter(d => d.parentId === parentId).map(d => d.id);
+      const direct = allDecks
+        .filter((d) => d.parentId === parentId)
+        .map((d) => d.id);
       return [...direct, ...direct.flatMap(descendantIds)];
     }
 
@@ -142,7 +152,7 @@ router.get("/decks/:id/export-json", async (req, res, next): Promise<void> => {
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${safeName}.ankigen.json"`
+      `attachment; filename="${safeName}.ankigen.json"`,
     );
     res.end(JSON.stringify(file, null, 2));
   } catch (err) {
@@ -158,7 +168,11 @@ function validateNode(node: unknown, path: string): string | null {
   if (!node || typeof node !== "object") return `${path}: not an object`;
   const n = node as Record<string, unknown>;
   if (!isString(n.name) || n.name.trim() === "") return `${path}.name missing`;
-  if (n.description !== null && n.description !== undefined && !isString(n.description))
+  if (
+    n.description !== null &&
+    n.description !== undefined &&
+    !isString(n.description)
+  )
     return `${path}.description must be string or null`;
   if (!Array.isArray(n.cards)) return `${path}.cards must be array`;
   if (!Array.isArray(n.subDecks)) return `${path}.subDecks must be array`;
@@ -177,7 +191,7 @@ function validateNode(node: unknown, path: string): string | null {
 
 async function importNode(
   node: ExportedNode,
-  parentId: number | null
+  parentId: number | null,
 ): Promise<{ deckCount: number; cardCount: number }> {
   const [created] = await db
     .insert(decksTable)
@@ -193,7 +207,7 @@ async function importNode(
 
   if (node.cards.length > 0) {
     await db.insert(cardsTable).values(
-      node.cards.map(c => ({
+      node.cards.map((c) => ({
         deckId: created.id,
         front: c.front,
         back: c.back,
@@ -201,9 +215,10 @@ async function importNode(
         image: c.image ?? undefined,
         cardType: c.cardType ?? undefined,
         choices: c.choices ?? undefined,
-        correctIndex: typeof c.correctIndex === "number" ? c.correctIndex : undefined,
+        correctIndex:
+          typeof c.correctIndex === "number" ? c.correctIndex : undefined,
         pageNumber: typeof c.pageNumber === "number" ? c.pageNumber : undefined,
-      }))
+      })),
     );
     cardCount += node.cards.length;
   }
@@ -235,15 +250,23 @@ router.post("/import-deck-json", async (req, res, next): Promise<void> => {
     if (Array.isArray(body.roots)) {
       for (let i = 0; i < body.roots.length; i++) {
         const err = validateNode(body.roots[i], `roots[${i}]`);
-        if (err) { res.status(400).json({ error: `Invalid file: ${err}` }); return; }
+        if (err) {
+          res.status(400).json({ error: `Invalid file: ${err}` });
+          return;
+        }
       }
       inputRoots = body.roots as ExportedNode[];
     } else if (body.root) {
       const err = validateNode(body.root, "root");
-      if (err) { res.status(400).json({ error: `Invalid file: ${err}` }); return; }
+      if (err) {
+        res.status(400).json({ error: `Invalid file: ${err}` });
+        return;
+      }
       inputRoots = [body.root as ExportedNode];
     } else {
-      res.status(400).json({ error: "File has no 'root' or 'roots' deck data." });
+      res
+        .status(400)
+        .json({ error: "File has no 'root' or 'roots' deck data." });
       return;
     }
 
@@ -252,8 +275,12 @@ router.post("/import-deck-json", async (req, res, next): Promise<void> => {
       return;
     }
 
-    const allDecks = await db.select({ name: decksTable.name, parentId: decksTable.parentId }).from(decksTable);
-    const topNames = new Set(allDecks.filter(d => d.parentId === null).map(d => d.name));
+    const allDecks = await db
+      .select({ name: decksTable.name, parentId: decksTable.parentId })
+      .from(decksTable);
+    const topNames = new Set(
+      allDecks.filter((d) => d.parentId === null).map((d) => d.name),
+    );
 
     let totalDecks = 0;
     let totalCards = 0;
@@ -275,7 +302,10 @@ router.post("/import-deck-json", async (req, res, next): Promise<void> => {
     }
 
     res.status(201).json({
-      importedName: importedNames.length === 1 ? importedNames[0] : `${importedNames.length} top-level decks`,
+      importedName:
+        importedNames.length === 1
+          ? importedNames[0]
+          : `${importedNames.length} top-level decks`,
       importedNames,
       deckCount: totalDecks,
       cardCount: totalCards,

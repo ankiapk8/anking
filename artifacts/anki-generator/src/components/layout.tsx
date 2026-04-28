@@ -18,15 +18,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center gap-1 sm:gap-2 px-3 sm:px-4 md:px-6 max-w-5xl mx-auto">
-          <Link href="/" className="flex items-center gap-2 mr-1 sm:mr-2 md:mr-6 shrink-0">
+          <Link
+            href="/"
+            className="flex items-center gap-2 mr-1 sm:mr-2 md:mr-6 shrink-0"
+          >
             <BookOpen className="h-6 w-6 text-primary" />
-            <span className="font-serif text-lg font-bold tracking-tight hidden sm:inline">AnkiGen</span>
+            <span className="font-serif text-lg font-bold tracking-tight hidden sm:inline">
+              AnkiGen
+            </span>
           </Link>
           <nav className="flex items-center gap-0.5 sm:gap-1 min-w-0">
             {navLinks.map(({ href, label, icon: Icon }) => {
-              const isActive = href === "/"
-                ? location === "/"
-                : location.startsWith(href);
+              const isActive =
+                href === "/" ? location === "/" : location.startsWith(href);
               return (
                 <Link key={href} href={href}>
                   <span
@@ -50,7 +54,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 whileTap={{ scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 400, damping: 22 }}
                 className={`relative ml-0.5 sm:ml-1 inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-md text-sm font-semibold overflow-hidden text-white shadow-sm shadow-primary/20 ${
-                  generateActive ? "ring-2 ring-primary/40 ring-offset-1 ring-offset-background" : ""
+                  generateActive
+                    ? "ring-2 ring-primary/40 ring-offset-1 ring-offset-background"
+                    : ""
                 }`}
                 style={{
                   background:

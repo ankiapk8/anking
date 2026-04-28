@@ -11,11 +11,11 @@ export type StudySession = {
 
 export type StudySavePoint = {
   deckId: number;
-  cardIds: number[];   // ordered card IDs (preserves shuffle order)
+  cardIds: number[]; // ordered card IDs (preserves shuffle order)
   index: number;
   knownIds: number[];
   unknownIds: number[];
-  savedAt: string;     // ISO string
+  savedAt: string; // ISO string
 };
 
 const STORAGE_KEY = "ankigen_study_sessions";
@@ -70,7 +70,9 @@ export function getSessions(): StudySession[] {
   }
 }
 
-export function saveSession(session: Omit<StudySession, "id" | "date">): StudySession {
+export function saveSession(
+  session: Omit<StudySession, "id" | "date">,
+): StudySession {
   const sessions = getSessions();
   const newSession: StudySession = {
     ...session,
@@ -84,7 +86,7 @@ export function saveSession(session: Omit<StudySession, "id" | "date">): StudySe
 
 export function getStudyStreak(sessions: StudySession[]): number {
   if (sessions.length === 0) return 0;
-  const dates = new Set(sessions.map(s => s.date));
+  const dates = new Set(sessions.map((s) => s.date));
   let streak = 0;
   let cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
@@ -111,15 +113,21 @@ export function getStudyStreak(sessions: StudySession[]): number {
   return streak;
 }
 
-export function getLast7Days(): { date: string; label: string; known: number; total: number }[] {
+export function getLast7Days(): {
+  date: string;
+  label: string;
+  known: number;
+  total: number;
+}[] {
   const sessions = getSessions();
   const result = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().slice(0, 10);
-    const label = i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" });
-    const daySessions = sessions.filter(s => s.date === dateStr);
+    const label =
+      i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" });
+    const daySessions = sessions.filter((s) => s.date === dateStr);
     const known = daySessions.reduce((sum, s) => sum + s.known, 0);
     const total = daySessions.reduce((sum, s) => sum + s.total, 0);
     result.push({ date: dateStr, label, known, total });
@@ -127,10 +135,23 @@ export function getLast7Days(): { date: string; label: string; known: number; to
   return result;
 }
 
-export function getDeckStats(sessions: StudySession[]): Map<number, { deckName: string; total: number; known: number; sessions: number }> {
-  const map = new Map<number, { deckName: string; total: number; known: number; sessions: number }>();
+export function getDeckStats(
+  sessions: StudySession[],
+): Map<
+  number,
+  { deckName: string; total: number; known: number; sessions: number }
+> {
+  const map = new Map<
+    number,
+    { deckName: string; total: number; known: number; sessions: number }
+  >();
   for (const s of sessions) {
-    const existing = map.get(s.deckId) ?? { deckName: s.deckName, total: 0, known: 0, sessions: 0 };
+    const existing = map.get(s.deckId) ?? {
+      deckName: s.deckName,
+      total: 0,
+      known: 0,
+      sessions: 0,
+    };
     map.set(s.deckId, {
       deckName: s.deckName,
       total: existing.total + s.total,
@@ -141,9 +162,12 @@ export function getDeckStats(sessions: StudySession[]): Map<number, { deckName: 
   return map;
 }
 
-export function getTodayStats(sessions: StudySession[]): { cardsStudied: number; known: number } {
+export function getTodayStats(sessions: StudySession[]): {
+  cardsStudied: number;
+  known: number;
+} {
   const t = today();
-  const todaySessions = sessions.filter(s => s.date === t);
+  const todaySessions = sessions.filter((s) => s.date === t);
   return {
     cardsStudied: todaySessions.reduce((sum, s) => sum + s.total, 0),
     known: todaySessions.reduce((sum, s) => sum + s.known, 0),

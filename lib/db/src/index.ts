@@ -11,7 +11,9 @@ if (!process.env.DATABASE_URL) {
 }
 
 const defaultUrl = "postgresql://localhost:5432/ankigen";
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL || defaultUrl });
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || defaultUrl,
+});
 export const db = drizzle(pool, { schema });
 
 export async function ensureDatabaseSchema(): Promise<void> {

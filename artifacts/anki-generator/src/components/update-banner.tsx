@@ -6,18 +6,22 @@ const POLL_MS = 60_000;
 
 function currentScriptHash(): string | null {
   if (typeof document === "undefined") return null;
-  const scripts = Array.from(document.querySelectorAll("script[src]")) as HTMLScriptElement[];
+  const scripts = Array.from(
+    document.querySelectorAll("script[src]"),
+  ) as HTMLScriptElement[];
   const main =
     scripts.find((s) => /assets\/.*\.js$/.test(s.src)) ??
     scripts.find((s) => /\.(js|mjs)$/.test(s.src));
-  return main ? main.src.split("/").pop() ?? null : null;
+  return main ? (main.src.split("/").pop() ?? null) : null;
 }
 
 function parseScriptHash(html: string): string | null {
-  const match = html.match(/<script[^>]+src=["']([^"']*assets\/[^"']+\.js)["']/i);
+  const match = html.match(
+    /<script[^>]+src=["']([^"']*assets\/[^"']+\.js)["']/i,
+  );
   if (match) return match[1].split("/").pop() ?? null;
   const fallback = html.match(/<script[^>]+src=["']([^"']+\.(?:js|mjs))["']/i);
-  return fallback ? fallback[1].split("/").pop() ?? null : null;
+  return fallback ? (fallback[1].split("/").pop() ?? null) : null;
 }
 
 export function UpdateBanner() {
@@ -137,7 +141,11 @@ export function UpdateBanner() {
             <motion.div
               className="relative shrink-0 w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur"
               animate={{ rotate: [0, 8, -8, 0] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+              transition={{
+                duration: 2.4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
             >
               <Sparkles className="w-5 h-5" />
             </motion.div>
@@ -156,7 +164,9 @@ export function UpdateBanner() {
               className="relative inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white text-emerald-700 text-xs font-bold shadow-md hover:scale-[1.04] active:scale-[0.97] transition disabled:opacity-70"
               data-testid="update-banner-refresh"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
+              />
               {refreshing ? "Refreshing…" : "Refresh"}
             </button>
             <button

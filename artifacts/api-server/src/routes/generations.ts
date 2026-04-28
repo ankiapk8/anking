@@ -6,7 +6,10 @@ const router: IRouter = Router();
 
 router.get("/generations", async (req, res, next) => {
   try {
-    const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? "100"), 10) || 100, 1), 500);
+    const limit = Math.min(
+      Math.max(parseInt(String(req.query.limit ?? "100"), 10) || 100, 1),
+      500,
+    );
     const rows = await db
       .select()
       .from(generationsTable)

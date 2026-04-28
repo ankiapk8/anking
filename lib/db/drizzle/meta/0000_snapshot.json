@@ -53,12 +53,8 @@
           "name": "decks_parent_id_decks_id_fk",
           "tableFrom": "decks",
           "tableTo": "decks",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -124,12 +120,8 @@
           "name": "cards_deck_id_decks_id_fk",
           "tableFrom": "cards",
           "tableTo": "decks",
-          "columnsFrom": [
-            "deck_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["deck_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

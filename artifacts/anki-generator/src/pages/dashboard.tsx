@@ -7,8 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Layers, FileText, Sparkles, TrendingUp, ChevronRight, PlusCircle,
-  Clock, Flame, Brain, CheckCircle2, BookOpen,
+  Layers,
+  FileText,
+  Sparkles,
+  TrendingUp,
+  ChevronRight,
+  PlusCircle,
+  Clock,
+  Flame,
+  Brain,
+  CheckCircle2,
+  BookOpen,
 } from "lucide-react";
 import {
   getSessions,
@@ -29,20 +38,31 @@ export default function Dashboard() {
 
   const totalDecks = decks?.length ?? 0;
   const totalCards = decks?.reduce((sum, d) => sum + d.cardCount, 0) ?? 0;
-  const thisWeekDecks = decks?.filter(d => isThisWeek(new Date(d.createdAt))).length ?? 0;
+  const thisWeekDecks =
+    decks?.filter((d) => isThisWeek(new Date(d.createdAt))).length ?? 0;
 
   const totalSessionCards = sessions.reduce((sum, s) => sum + s.total, 0);
   const totalKnown = sessions.reduce((sum, s) => sum + s.known, 0);
-  const overallPct = totalSessionCards > 0 ? Math.round((totalKnown / totalSessionCards) * 100) : 0;
+  const overallPct =
+    totalSessionCards > 0
+      ? Math.round((totalKnown / totalSessionCards) * 100)
+      : 0;
 
-  const maxDay = Math.max(...last7.map(d => d.total), 1);
+  const maxDay = Math.max(...last7.map((d) => d.total), 1);
 
-  const recentDecks = [...(decks ?? [])].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  ).slice(0, 5);
+  const recentDecks = [...(decks ?? [])]
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+    .slice(0, 5);
 
   const deckStatsList = [...deckStats.entries()]
-    .map(([id, s]) => ({ id, ...s, pct: s.total > 0 ? Math.round((s.known / s.total) * 100) : 0 }))
+    .map(([id, s]) => ({
+      id,
+      ...s,
+      pct: s.total > 0 ? Math.round((s.known / s.total) * 100) : 0,
+    }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
 
@@ -55,8 +75,12 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-primary tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Your study progress at a glance.</p>
+          <h1 className="text-3xl font-serif font-bold text-primary tracking-tight">
+            Dashboard
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Your study progress at a glance.
+          </p>
         </div>
         <Link href="/generate">
           <Button className="gap-2">
@@ -69,33 +93,59 @@ export default function Dashboard() {
       {/* Top stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Decks", value: totalDecks, icon: Layers, color: "text-primary" },
-          { label: "Total Cards", value: totalCards, icon: FileText, color: "text-blue-500" },
-          { label: "Decks This Week", value: thisWeekDecks, icon: TrendingUp, color: "text-green-500" },
-          { label: "Study Streak", value: streak > 0 ? `${streak}d` : "—", icon: Flame, color: "text-emerald-500" },
+          {
+            label: "Total Decks",
+            value: totalDecks,
+            icon: Layers,
+            color: "text-primary",
+          },
+          {
+            label: "Total Cards",
+            value: totalCards,
+            icon: FileText,
+            color: "text-blue-500",
+          },
+          {
+            label: "Decks This Week",
+            value: thisWeekDecks,
+            icon: TrendingUp,
+            color: "text-green-500",
+          },
+          {
+            label: "Study Streak",
+            value: streak > 0 ? `${streak}d` : "—",
+            icon: Flame,
+            color: "text-emerald-500",
+          },
         ].map(({ label, value, icon: Icon, color }, idx) => (
           <motion.div
             key={label}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 * idx, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              delay: 0.05 * idx,
+              duration: 0.4,
+              ease: [0.22, 1, 0.36, 1],
+            }}
             whileHover={{ y: -3, transition: { duration: 0.15 } }}
           >
-          <Card className="border-border/50 shadow-sm h-full hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
-                <Icon className={`h-4 w-4 ${color}`} />
-              </div>
-            </CardHeader>
-            <CardContent className="pb-4 px-4">
-              {isLoading && label === "Total Decks" ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <p className="text-3xl font-bold tracking-tight">{value}</p>
-              )}
-            </CardContent>
-          </Card>
+            <Card className="border-border/50 shadow-sm h-full hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2 pt-4 px-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    {label}
+                  </p>
+                  <Icon className={`h-4 w-4 ${color}`} />
+                </div>
+              </CardHeader>
+              <CardContent className="pb-4 px-4">
+                {isLoading && label === "Total Decks" ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <p className="text-3xl font-bold tracking-tight">{value}</p>
+                )}
+              </CardContent>
+            </Card>
           </motion.div>
         ))}
       </div>
@@ -111,7 +161,9 @@ export default function Dashboard() {
                   <div className="h-8 w-8 rounded-md bg-violet-500/10 flex items-center justify-center shrink-0">
                     <Brain className="h-4 w-4 text-violet-500" />
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">Studied Today</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Studied Today
+                  </p>
                 </div>
                 <p className="text-3xl font-bold">{todayStats.cardsStudied}</p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -128,7 +180,9 @@ export default function Dashboard() {
                   <div className="h-8 w-8 rounded-md bg-green-500/10 flex items-center justify-center shrink-0">
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">Overall Known</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Overall Known
+                  </p>
                 </div>
                 <p className="text-3xl font-bold">{overallPct}%</p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -143,7 +197,9 @@ export default function Dashboard() {
                   <div className="h-8 w-8 rounded-md bg-blue-500/10 flex items-center justify-center shrink-0">
                     <BookOpen className="h-4 w-4 text-blue-500" />
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Sessions</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Total Sessions
+                  </p>
                 </div>
                 <p className="text-3xl font-bold">{sessions.length}</p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -160,13 +216,23 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="flex items-end gap-2 h-28">
-                {last7.map(day => {
-                  const knownH = day.total > 0 ? Math.round((day.known / maxDay) * 96) : 0;
-                  const unknownH = day.total > 0 ? Math.round(((day.total - day.known) / maxDay) * 96) : 0;
+                {last7.map((day) => {
+                  const knownH =
+                    day.total > 0 ? Math.round((day.known / maxDay) * 96) : 0;
+                  const unknownH =
+                    day.total > 0
+                      ? Math.round(((day.total - day.known) / maxDay) * 96)
+                      : 0;
                   const isEmpty = day.total === 0;
                   return (
-                    <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
-                      <div className="w-full flex flex-col-reverse items-stretch gap-0" style={{ height: 96 }}>
+                    <div
+                      key={day.date}
+                      className="flex-1 flex flex-col items-center gap-1"
+                    >
+                      <div
+                        className="w-full flex flex-col-reverse items-stretch gap-0"
+                        style={{ height: 96 }}
+                      >
                         {isEmpty ? (
                           <div
                             className="w-full rounded-sm bg-border/50"
@@ -188,7 +254,9 @@ export default function Dashboard() {
                           </>
                         )}
                       </div>
-                      <span className="text-[10px] text-muted-foreground leading-none">{day.label}</span>
+                      <span className="text-[10px] text-muted-foreground leading-none">
+                        {day.label}
+                      </span>
                     </div>
                   );
                 })}
@@ -200,7 +268,9 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="h-2.5 w-2.5 rounded-sm bg-emerald-400/70" />
-                  <span className="text-xs text-muted-foreground">Still learning</span>
+                  <span className="text-xs text-muted-foreground">
+                    Still learning
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -213,10 +283,12 @@ export default function Dashboard() {
                 <CardTitle className="text-base">Deck Progress</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {deckStatsList.map(d => (
+                {deckStatsList.map((d) => (
                   <div key={d.id}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium truncate max-w-[60%]">{d.deckName}</span>
+                      <span className="text-sm font-medium truncate max-w-[60%]">
+                        {d.deckName}
+                      </span>
                       <span className="text-sm text-muted-foreground shrink-0">
                         {d.pct}% known · {d.total} cards
                       </span>
@@ -236,9 +308,11 @@ export default function Dashboard() {
           {/* Recent sessions */}
           {recentSessions.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold tracking-tight mb-3">Recent Sessions</h2>
+              <h2 className="text-lg font-semibold tracking-tight mb-3">
+                Recent Sessions
+              </h2>
               <div className="space-y-2">
-                {recentSessions.map(s => (
+                {recentSessions.map((s) => (
                   <Card key={s.id} className="border-border/50 shadow-sm">
                     <CardContent className="flex items-center gap-4 py-3 px-4">
                       <div className="h-9 w-9 rounded-md bg-violet-500/10 flex items-center justify-center shrink-0">
@@ -249,7 +323,10 @@ export default function Dashboard() {
                         <div className="flex items-center gap-2 mt-0.5">
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(s.completedAt), "MMM d 'at' h:mm a")}
+                            {format(
+                              new Date(s.completedAt),
+                              "MMM d 'at' h:mm a",
+                            )}
                           </p>
                         </div>
                       </div>
@@ -273,9 +350,13 @@ export default function Dashboard() {
         <Card className="border-border/50 shadow-sm">
           <CardContent className="text-center py-10">
             <Brain className="mx-auto h-10 w-10 text-muted-foreground opacity-40 mb-3" />
-            <p className="font-medium text-muted-foreground">No study sessions yet</p>
+            <p className="font-medium text-muted-foreground">
+              No study sessions yet
+            </p>
             <p className="text-sm text-muted-foreground mt-1 mb-4">
-              Open a deck and hit <span className="font-medium text-foreground">Study</span> to start tracking your progress.
+              Open a deck and hit{" "}
+              <span className="font-medium text-foreground">Study</span> to
+              start tracking your progress.
             </p>
             <Link href="/decks">
               <Button size="sm" variant="outline" className="gap-2">
@@ -297,7 +378,9 @@ export default function Dashboard() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold">Generate New Decks</p>
-                <p className="text-sm text-muted-foreground">Upload files or paste text to create flashcards</p>
+                <p className="text-sm text-muted-foreground">
+                  Upload files or paste text to create flashcards
+                </p>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </CardContent>
@@ -311,7 +394,9 @@ export default function Dashboard() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold">Browse Library</p>
-                <p className="text-sm text-muted-foreground">View, edit, and export all your decks</p>
+                <p className="text-sm text-muted-foreground">
+                  View, edit, and export all your decks
+                </p>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </CardContent>
@@ -323,10 +408,16 @@ export default function Dashboard() {
       {recentDecks.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold tracking-tight">Recent Decks</h2>
+            <h2 className="text-lg font-semibold tracking-tight">
+              Recent Decks
+            </h2>
             {totalDecks > 5 && (
               <Link href="/decks">
-                <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-muted-foreground"
+                >
                   View all <ChevronRight className="h-3 w-3" />
                 </Button>
               </Link>
@@ -348,13 +439,17 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2 mt-0.5">
                         <Clock className="h-3 w-3 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(deck.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                          {format(
+                            new Date(deck.createdAt),
+                            "MMM d, yyyy 'at' h:mm a",
+                          )}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-sm font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-md">
-                        {deck.cardCount} {deck.cardCount === 1 ? "card" : "cards"}
+                        {deck.cardCount}{" "}
+                        {deck.cardCount === 1 ? "card" : "cards"}
                       </span>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>

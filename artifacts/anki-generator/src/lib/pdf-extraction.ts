@@ -49,7 +49,8 @@ async function renderPageToJpeg(
   canvas.height = Math.ceil(viewport.height);
   const context = canvas.getContext("2d");
 
-  if (!context) throw new Error("Could not get canvas context for image extraction.");
+  if (!context)
+    throw new Error("Could not get canvas context for image extraction.");
 
   await page.render({ canvasContext: context, canvas, viewport }).promise;
   page.cleanup();
@@ -57,7 +58,10 @@ async function renderPageToJpeg(
   return new Promise<string>((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
-        if (!blob) { reject(new Error("Failed to render page image.")); return; }
+        if (!blob) {
+          reject(new Error("Failed to render page image."));
+          return;
+        }
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = () => reject(new Error("Failed to read page image."));
@@ -85,7 +89,9 @@ async function extractEmbeddedText(
       const page = await pdf.getPage(pageNumber);
       const content = await page.getTextContent();
       const pageText = content.items
-        .map((item) => ("str" in item && typeof item.str === "string" ? item.str : ""))
+        .map((item) =>
+          "str" in item && typeof item.str === "string" ? item.str : "",
+        )
         .filter(Boolean)
         .join(" ");
       pageTexts.push(normalizeText(pageText));
@@ -98,7 +104,10 @@ async function extractEmbeddedText(
   return { text: normalizeText(pageTexts.join("\n")), pageTexts };
 }
 
-async function extractPageImages(buffer: ArrayBuffer, onProgress?: ProgressCallback): Promise<string[]> {
+async function extractPageImages(
+  buffer: ArrayBuffer,
+  onProgress?: ProgressCallback,
+): Promise<string[]> {
   const pdf = await loadPdf(buffer);
   const images: string[] = [];
   const pagesToRender = Math.min(pdf.numPages, MAX_IMAGE_PAGES);
@@ -147,7 +156,10 @@ async function extractClientOcrText(
       const baseViewport = page.getViewport({ scale: 1 });
       const scale = Math.max(
         1,
-        Math.min(2, MAX_OCR_DIMENSION / Math.max(baseViewport.width, baseViewport.height)),
+        Math.min(
+          2,
+          MAX_OCR_DIMENSION / Math.max(baseViewport.width, baseViewport.height),
+        ),
       );
       const viewport = page.getViewport({ scale });
       const canvas = document.createElement("canvas");
@@ -189,30 +201,50 @@ async function extractServerText(
     body: formData,
   });
 
-  const data = await response.json().catch(() => null) as { text?: unknown; pageTexts?: unknown; error?: unknown; method?: unknown } | null;
+  const data = (await response.json().catch(() => null)) as {
+    text?: unknown;
+    pageTexts?: unknown;
+    error?: unknown;
+    method?: unknown;
+  } | null;
 
   if (!response.ok) {
-    const error = typeof data?.error === "string" ? data.error : "Server PDF extraction failed.";
+    const error =
+      typeof data?.error === "string"
+        ? data.error
+        : "Server PDF extraction failed.";
     throw new Error(error);
   }
 
-  if (!data || typeof data.text !== "string" || data.text.trim().length <= MIN_TEXT_LENGTH) {
+  if (
+    !data ||
+    typeof data.text !== "string" ||
+    data.text.trim().length <= MIN_TEXT_LENGTH
+  ) {
     throw new Error("No readable text found in this PDF.");
   }
 
   const serverPageTexts = Array.isArray(data.pageTexts)
-    ? (data.pageTexts as unknown[]).filter((t): t is string => typeof t === "string").map(normalizeText)
+    ? (data.pageTexts as unknown[])
+        .filter((t): t is string => typeof t === "string")
+        .map(normalizeText)
     : [];
 
   return { text: normalizeText(data.text), pageTexts: serverPageTexts };
 }
 
-export async function extractPdfText(buffer: ArrayBuffer, onProgress?: ProgressCallback): Promise<string> {
+export async function extractPdfText(
+  buffer: ArrayBuffer,
+  onProgress?: ProgressCallback,
+): Promise<string> {
   const result = await extractPdf(buffer, onProgress);
   return result.text;
 }
 
-export async function extractPdf(buffer: ArrayBuffer, onProgress?: ProgressCallback): Promise<PdfExtractionResult> {
+export async function extractPdf(
+  buffer: ArrayBuffer,
+  onProgress?: ProgressCallback,
+): Promise<PdfExtractionResult> {
   const isLargeFile = buffer.byteLength > SERVER_THRESHOLD_BYTES;
   let text = "";
   let pageTexts: string[] = [];
@@ -269,7 +301,9 @@ export async function extractPdf(buffer: ArrayBuffer, onProgress?: ProgressCallb
 }
 
 export function isPdfFile(file: File): boolean {
-  return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  return (
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
+  );
 }
 
 export function isTextFile(file: File): boolean {

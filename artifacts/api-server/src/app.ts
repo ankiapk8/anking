@@ -1,4 +1,9 @@
-import express, { type Express, type Request, type Response, type NextFunction } from "express";
+import express, {
+  type Express,
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
@@ -39,11 +44,7 @@ const clientDist = path.join(__dirname, "../../../anki-generator/dist/public");
 app.use(express.static(clientDist));
 
 // Fallback for SPA routing
-app.get(/^(?!\/api).+/, (req, res) => {
-  if (req.url.startsWith("/api")) {
-    res.status(404).json({ error: "API route not found" });
-    return;
-  }
+app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(clientDist, "index.html"), (err) => {
     if (err) {
       res.status(404).send("Frontend not built or index.html missing");

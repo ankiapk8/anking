@@ -8,9 +8,12 @@ export function parseBbox(raw: string | null | undefined): Bbox | null {
   try {
     const obj = JSON.parse(raw);
     if (
-      typeof obj?.x === "number" && typeof obj?.y === "number" &&
-      typeof obj?.w === "number" && typeof obj?.h === "number"
-    ) return obj as Bbox;
+      typeof obj?.x === "number" &&
+      typeof obj?.y === "number" &&
+      typeof obj?.w === "number" &&
+      typeof obj?.h === "number"
+    )
+      return obj as Bbox;
   } catch {
     /* ignore */
   }
@@ -26,7 +29,14 @@ interface CropCompareProps {
   defaultOpen?: boolean;
 }
 
-export function CropCompare({ image, sourceImage, bbox, onLightbox, className, defaultOpen = false }: CropCompareProps) {
+export function CropCompare({
+  image,
+  sourceImage,
+  bbox,
+  onLightbox,
+  className,
+  defaultOpen = false,
+}: CropCompareProps) {
   const [open, setOpen] = useState(defaultOpen);
   const hasSource = !!sourceImage && !!bbox;
 
@@ -36,7 +46,11 @@ export function CropCompare({ image, sourceImage, bbox, onLightbox, className, d
         className={`rounded-lg overflow-hidden border border-border/40 bg-background relative group/img ${onLightbox ? "cursor-zoom-in" : ""} ${className ?? ""}`}
         onClick={() => onLightbox?.(image)}
       >
-        <img src={image} alt="Card visual" className="w-full h-auto max-h-72 object-contain" />
+        <img
+          src={image}
+          alt="Card visual"
+          className="w-full h-auto max-h-72 object-contain"
+        />
         {onLightbox && (
           <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-colors flex items-center justify-center">
             <div className="opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/60 text-white rounded-full p-2">
@@ -48,13 +62,18 @@ export function CropCompare({ image, sourceImage, bbox, onLightbox, className, d
     );
   }
 
-  const fullPage = bbox!.w >= 0.99 && bbox!.h >= 0.99 && bbox!.x <= 0.01 && bbox!.y <= 0.01;
+  const fullPage =
+    bbox!.w >= 0.99 && bbox!.h >= 0.99 && bbox!.x <= 0.01 && bbox!.y <= 0.01;
   const tinyCrop = bbox!.w * bbox!.h < 0.04;
-  const warning = tinyCrop ? "Crop is very small — may be missing context" : null;
+  const warning = tinyCrop
+    ? "Crop is very small — may be missing context"
+    : null;
 
   return (
     <div className={`space-y-2 ${className ?? ""}`}>
-      <div className={`grid gap-2 ${open ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
+      <div
+        className={`grid gap-2 ${open ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}
+      >
         <div
           className={`rounded-lg overflow-hidden border border-border/40 bg-background relative group/img ${onLightbox ? "cursor-zoom-in" : ""}`}
           onClick={() => onLightbox?.(image)}
@@ -62,7 +81,11 @@ export function CropCompare({ image, sourceImage, bbox, onLightbox, className, d
           <div className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded bg-black/60 text-white pointer-events-none">
             Crop
           </div>
-          <img src={image} alt="Card visual crop" className="w-full h-auto max-h-72 object-contain" />
+          <img
+            src={image}
+            alt="Card visual crop"
+            className="w-full h-auto max-h-72 object-contain"
+          />
           {onLightbox && (
             <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-colors flex items-center justify-center">
               <div className="opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/60 text-white rounded-full p-2">
@@ -81,7 +104,11 @@ export function CropCompare({ image, sourceImage, bbox, onLightbox, className, d
               Source page
             </div>
             <div className="relative">
-              <img src={sourceImage!} alt="Source page" className="w-full h-auto max-h-72 object-contain block" />
+              <img
+                src={sourceImage!}
+                alt="Source page"
+                className="w-full h-auto max-h-72 object-contain block"
+              />
               {!fullPage && (
                 <div
                   className="absolute border-2 border-red-500 bg-red-500/15 pointer-events-none shadow-[0_0_0_1px_rgba(0,0,0,0.4)_inset]"
@@ -108,7 +135,10 @@ export function CropCompare({ image, sourceImage, bbox, onLightbox, className, d
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((o) => !o);
+          }}
           className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"
         >
           {open ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}

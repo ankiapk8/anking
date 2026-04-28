@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import confetti from "canvas-confetti";
 import { useParams, Link } from "wouter";
-import { 
-  useGetDeck, 
-  useListDeckCards, 
-  useUpdateCard, 
-  useDeleteCard, 
+import {
+  useGetDeck,
+  useListDeckCards,
+  useUpdateCard,
+  useDeleteCard,
   getListDeckCardsQueryKey,
-  getGetDeckQueryKey
+  getGetDeckQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -17,11 +17,34 @@ import { Card as CardUI, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  ArrowLeft, Download, Trash2, Edit2, Check, X, 
-  FileText, BookOpen, Shuffle, ChevronLeft, ChevronRight,
-  RotateCcw, GraduationCap, Eye, Bookmark, Play, Sparkles, Loader2,
-  Brain, ClipboardList, Stethoscope, ChevronDown, FileJson, Package, ImageIcon, ZoomIn, XCircle
+import {
+  ArrowLeft,
+  Download,
+  Trash2,
+  Edit2,
+  Check,
+  X,
+  FileText,
+  BookOpen,
+  Shuffle,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  GraduationCap,
+  Eye,
+  Bookmark,
+  Play,
+  Sparkles,
+  Loader2,
+  Brain,
+  ClipboardList,
+  Stethoscope,
+  ChevronDown,
+  FileJson,
+  Package,
+  ImageIcon,
+  ZoomIn,
+  XCircle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -31,8 +54,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl } from "@/lib/utils";
-import { saveSession, getSavePoint, saveSavePoint, clearSavePoint, type StudySavePoint } from "@/lib/study-stats";
-import type { Card, Deck } from "@workspace/api-client-react/src/generated/api.schemas";
+import {
+  saveSession,
+  getSavePoint,
+  saveSavePoint,
+  clearSavePoint,
+  type StudySavePoint,
+} from "@/lib/study-stats";
+import type {
+  Card,
+  Deck,
+} from "@workspace/api-client-react/src/generated/api.schemas";
 import { Drawer } from "vaul";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -49,7 +81,14 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a;
 }
 
-function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
+function StudyMode({
+  cards,
+  deckId,
+  deckName,
+  deckKind,
+  onExit,
+  savePoint,
+}: {
   cards: Card[];
   deckId: number;
   deckName: string;
@@ -60,8 +99,10 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
   const isQbank = deckKind === "qbank";
   const buildInitialDeck = () => {
     if (savePoint) {
-      const byId = new Map(cards.map(c => [c.id, c]));
-      const ordered = savePoint.cardIds.map(id => byId.get(id)).filter(Boolean) as Card[];
+      const byId = new Map(cards.map((c) => [c.id, c]));
+      const ordered = savePoint.cardIds
+        .map((id) => byId.get(id))
+        .filter(Boolean) as Card[];
       return ordered.length === cards.length ? ordered : cards;
     }
     return cards;
@@ -69,10 +110,16 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
 
   const [shuffled, setShuffled] = useState(false);
   const [deck, setDeck] = useState<Card[]>(buildInitialDeck);
-  const [index, setIndex] = useState(savePoint ? Math.min(savePoint.index, Math.max(0, cards.length - 1)) : 0);
+  const [index, setIndex] = useState(
+    savePoint ? Math.min(savePoint.index, Math.max(0, cards.length - 1)) : 0,
+  );
   const [revealed, setRevealed] = useState(false);
-  const [known, setKnown] = useState<Set<number>>(new Set(savePoint?.knownIds ?? []));
-  const [unknown, setUnknown] = useState<Set<number>>(new Set(savePoint?.unknownIds ?? []));
+  const [known, setKnown] = useState<Set<number>>(
+    new Set(savePoint?.knownIds ?? []),
+  );
+  const [unknown, setUnknown] = useState<Set<number>>(
+    new Set(savePoint?.unknownIds ?? []),
+  );
   const [done, setDone] = useState(false);
   const [flipping, setFlipping] = useState(false);
   const [mcqSelected, setMcqSelected] = useState<number | null>(null);
@@ -80,7 +127,8 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
 
   const current = deck[index];
   const total = deck.length;
-  const progress = total > 0 ? Math.round(((known.size + unknown.size) / total) * 100) : 0;
+  const progress =
+    total > 0 ? Math.round(((known.size + unknown.size) / total) * 100) : 0;
   const isMcq =
     current?.cardType === "mcq" &&
     Array.isArray(current?.choices) &&
@@ -99,44 +147,51 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
     osce: "OSCE Questions",
   };
 
-  const handleExplain = useCallback(async (mode: ExplainMode) => {
-    if (!current || isExplaining) return;
-    setExplanation("");
-    setExplainMode(mode);
-    setIsExplaining(true);
-    try {
-      const resp = await fetch(apiUrl("api/explain"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ front: current.front, back: current.back, mode }),
-      });
-      if (!resp.ok || !resp.body) {
-        const err = await resp.json().catch(() => ({}));
-        setExplanation(err.error ?? "Could not get an explanation.");
-        return;
+  const handleExplain = useCallback(
+    async (mode: ExplainMode) => {
+      if (!current || isExplaining) return;
+      setExplanation("");
+      setExplainMode(mode);
+      setIsExplaining(true);
+      try {
+        const resp = await fetch(apiUrl("api/explain"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            front: current.front,
+            back: current.back,
+            mode,
+          }),
+        });
+        if (!resp.ok || !resp.body) {
+          const err = await resp.json().catch(() => ({}));
+          setExplanation(err.error ?? "Could not get an explanation.");
+          return;
+        }
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let text = "";
+        while (true) {
+          const { done: streamDone, value } = await reader.read();
+          if (streamDone) break;
+          text += decoder.decode(value, { stream: true });
+          setExplanation(text);
+        }
+      } catch {
+        setExplanation("Failed to get an explanation. Please try again.");
+      } finally {
+        setIsExplaining(false);
       }
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let text = "";
-      while (true) {
-        const { done: streamDone, value } = await reader.read();
-        if (streamDone) break;
-        text += decoder.decode(value, { stream: true });
-        setExplanation(text);
-      }
-    } catch {
-      setExplanation("Failed to get an explanation. Please try again.");
-    } finally {
-      setIsExplaining(false);
-    }
-  }, [current, isExplaining]);
+    },
+    [current, isExplaining],
+  );
 
   // Auto-save progress whenever position or results change
   useEffect(() => {
     if (done) return;
     saveSavePoint({
       deckId,
-      cardIds: deck.map(c => c.id),
+      cardIds: deck.map((c) => c.id),
       index,
       knownIds: Array.from(known),
       unknownIds: Array.from(unknown),
@@ -145,7 +200,7 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
   }, [deckId, deck, index, known, unknown, done]);
 
   useEffect(() => {
-    if (done && !savedRef.current && (known.size + unknown.size) > 0) {
+    if (done && !savedRef.current && known.size + unknown.size > 0) {
       savedRef.current = true;
       clearSavePoint(deckId);
       saveSession({
@@ -156,10 +211,14 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
         unknown: unknown.size,
         completedAt: new Date().toISOString(),
       });
-      const pct = (known.size + unknown.size) > 0 ? known.size / (known.size + unknown.size) : 0;
-      const colors = pct >= 0.8
-        ? ["#22c55e", "#10b981", "#84cc16", "#16a34a", "#4ade80"]
-        : ["#16a34a", "#84cc16", "#facc15", "#a3a3a3"];
+      const pct =
+        known.size + unknown.size > 0
+          ? known.size / (known.size + unknown.size)
+          : 0;
+      const colors =
+        pct >= 0.8
+          ? ["#22c55e", "#10b981", "#84cc16", "#16a34a", "#4ade80"]
+          : ["#16a34a", "#84cc16", "#facc15", "#a3a3a3"];
       const burst = (originX: number) => {
         confetti({
           particleCount: pct >= 0.8 ? 80 : 50,
@@ -174,10 +233,19 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
       burst(0.2);
       setTimeout(() => burst(0.8), 120);
       if (pct >= 0.9) {
-        setTimeout(() => confetti({
-          particleCount: 120, spread: 100, startVelocity: 55,
-          origin: { x: 0.5, y: 0.5 }, colors, scalar: 1.2, ticks: 260,
-        }), 280);
+        setTimeout(
+          () =>
+            confetti({
+              particleCount: 120,
+              spread: 100,
+              startVelocity: 55,
+              origin: { x: 0.5, y: 0.5 },
+              colors,
+              scalar: 1.2,
+              ticks: 260,
+            }),
+          280,
+        );
       }
     }
   }, [done, known.size, unknown.size, deckId, deckName]);
@@ -185,7 +253,7 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
   const handleSaveAndExit = useCallback(() => {
     saveSavePoint({
       deckId,
-      cardIds: deck.map(c => c.id),
+      cardIds: deck.map((c) => c.id),
       index,
       knownIds: Array.from(known),
       unknownIds: Array.from(unknown),
@@ -221,37 +289,72 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
     setFlipping(true);
     setExplanation(null);
     setExplainMode(null);
-    setTimeout(() => { fn(); setFlipping(false); }, 150);
+    setTimeout(() => {
+      fn();
+      setFlipping(false);
+    }, 150);
   }, []);
 
   const goNext = useCallback(() => {
-    if (index + 1 >= total) { setDone(true); return; }
-    transition(() => { setIndex(i => i + 1); setRevealed(false); setMcqSelected(null); });
+    if (index + 1 >= total) {
+      setDone(true);
+      return;
+    }
+    transition(() => {
+      setIndex((i) => i + 1);
+      setRevealed(false);
+      setMcqSelected(null);
+    });
   }, [index, total, transition]);
 
   const goPrev = useCallback(() => {
     if (index === 0) return;
-    transition(() => { setIndex(i => i - 1); setRevealed(false); setMcqSelected(null); });
+    transition(() => {
+      setIndex((i) => i - 1);
+      setRevealed(false);
+      setMcqSelected(null);
+    });
   }, [index, transition]);
 
   const markKnown = useCallback(() => {
-    setKnown(prev => new Set([...prev, current.id]));
-    setUnknown(prev => { const s = new Set(prev); s.delete(current.id); return s; });
+    setKnown((prev) => new Set([...prev, current.id]));
+    setUnknown((prev) => {
+      const s = new Set(prev);
+      s.delete(current.id);
+      return s;
+    });
     goNext();
   }, [current?.id, goNext]);
 
   const markUnknown = useCallback(() => {
-    setUnknown(prev => new Set([...prev, current.id]));
-    setKnown(prev => { const s = new Set(prev); s.delete(current.id); return s; });
+    setUnknown((prev) => new Set([...prev, current.id]));
+    setKnown((prev) => {
+      const s = new Set(prev);
+      s.delete(current.id);
+      return s;
+    });
     goNext();
   }, [current?.id, goNext]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setLightboxSrc(null); return; }
-      if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!revealed) setRevealed(true); else markKnown(); }
-      if (e.key === "ArrowRight") { e.preventDefault(); goNext(); }
-      if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
+      if (e.key === "Escape") {
+        setLightboxSrc(null);
+        return;
+      }
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        if (!revealed) setRevealed(true);
+        else markKnown();
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        goNext();
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goPrev();
+      }
       if (e.key === "1" && revealed) markKnown();
       if (e.key === "2" && revealed) markUnknown();
     };
@@ -264,8 +367,12 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-8 animate-in fade-in duration-500">
         <div className="text-center space-y-3">
           <div className="text-5xl mb-4">🎉</div>
-          <h2 className="text-2xl font-serif font-bold text-primary">Study session complete!</h2>
-          <p className="text-muted-foreground">You went through all {total} cards.</p>
+          <h2 className="text-2xl font-serif font-bold text-primary">
+            Study session complete!
+          </h2>
+          <p className="text-muted-foreground">
+            You went through all {total} cards.
+          </p>
         </div>
         <div className="flex gap-8 text-center">
           <div className="space-y-1">
@@ -280,8 +387,13 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
         </div>
         {total > 0 && (
           <div className="w-full max-w-xs">
-            <Progress value={Math.round((known.size / total) * 100)} className="h-2" />
-            <p className="text-xs text-center text-muted-foreground mt-1">{Math.round((known.size / total) * 100)}% known</p>
+            <Progress
+              value={Math.round((known.size / total) * 100)}
+              className="h-2"
+            />
+            <p className="text-xs text-center text-muted-foreground mt-1">
+              {Math.round((known.size / total) * 100)}% known
+            </p>
           </div>
         )}
         <div className="flex gap-3 flex-wrap justify-center">
@@ -289,16 +401,19 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
             <RotateCcw className="h-4 w-4" /> Study again
           </Button>
           {unknown.size > 0 && (
-            <Button onClick={() => {
-              const struggling = deck.filter(c => unknown.has(c.id));
-              setDeck(struggling);
-              setIndex(0);
-              setRevealed(false);
-              setMcqSelected(null);
-              setKnown(new Set());
-              setUnknown(new Set());
-              setDone(false);
-            }} className="gap-2">
+            <Button
+              onClick={() => {
+                const struggling = deck.filter((c) => unknown.has(c.id));
+                setDeck(struggling);
+                setIndex(0);
+                setRevealed(false);
+                setMcqSelected(null);
+                setKnown(new Set());
+                setUnknown(new Set());
+                setDone(false);
+              }}
+              className="gap-2"
+            >
               <RotateCcw className="h-4 w-4" /> Review {unknown.size} missed
             </Button>
           )}
@@ -312,316 +427,405 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
 
   return (
     <>
-    {lightboxSrc && (
-      <div
-        className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-150"
-        onClick={() => setLightboxSrc(null)}
-      >
-        <button
-          className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-150"
           onClick={() => setLightboxSrc(null)}
         >
-          <XCircle className="h-8 w-8" />
-        </button>
-        <img
-          src={lightboxSrc}
-          alt="Expanded view"
-          className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
-          onClick={e => e.stopPropagation()}
-        />
-      </div>
-    )}
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={handleSaveAndExit} className="gap-1.5 text-muted-foreground">
-          <Bookmark className="h-4 w-4" /> Save & Exit
-        </Button>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={shuffled ? "secondary" : "ghost"}
-            size="sm"
-            onClick={handleShuffle}
-            className="gap-1.5 h-8 text-xs"
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+            onClick={() => setLightboxSrc(null)}
           >
-            <Shuffle className="h-3.5 w-3.5" />
-            {shuffled ? "Shuffled" : "Shuffle"}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleRestart} className="gap-1.5 h-8 text-xs text-muted-foreground">
-            <RotateCcw className="h-3.5 w-3.5" /> Restart
-          </Button>
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Card {index + 1} of {total}</span>
-          <span className="flex gap-3">
-            {known.size > 0 && <span className="text-green-600 font-medium">✓ {known.size} known</span>}
-            {unknown.size > 0 && <span className="text-red-500 font-medium">✗ {unknown.size} learning</span>}
-          </span>
-        </div>
-        <Progress value={progress} className="h-1.5" />
-      </div>
-
-      <div
-        className={`relative transition-all duration-150 ${flipping ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
-      >
-        {revealed && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -inset-px rounded-xl opacity-60 blur-xl animate-in fade-in duration-500"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(255,60,0,0.18), rgba(34,197,94,0.18))",
-              zIndex: -1,
-            }}
+            <XCircle className="h-8 w-8" />
+          </button>
+          <img
+            src={lightboxSrc}
+            alt="Expanded view"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
           />
-        )}
-        <CardUI className="min-h-[280px] sm:min-h-[320px] border-border/50 shadow-lg overflow-hidden relative">
-          <CardContent className="p-0 flex flex-col h-full min-h-[280px] sm:min-h-[320px]">
-            <div className="flex-1 flex flex-col p-6 sm:p-8">
-              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
-                <span className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold">Q</span>
-                Front
-              </div>
-              {(() => {
-                const c = current as Card & { image?: string | null; sourceImage?: string | null; bbox?: string | null };
-                if (!c?.image) return null;
-                return (
-                  <div className="mb-4">
-                    <CropCompare
-                      image={c.image}
-                      sourceImage={c.sourceImage}
-                      bbox={parseBbox(c.bbox)}
-                      onLightbox={setLightboxSrc}
-                    />
-                  </div>
-                );
-              })()}
-              <p className="text-lg sm:text-xl font-medium text-foreground leading-relaxed">
-                {current?.front}
-              </p>
-
-              {isMcq && current?.choices && (
-                <ul className="mt-5 space-y-2 flex-1">
-                  {current.choices.map((choice, i) => {
-                    const isCorrect = i === current.correctIndex;
-                    const isSelected = mcqSelected === i;
-                    let stateClasses = "border-border/50 bg-background hover:bg-muted/50";
-                    let boxClasses = "border-border/60 bg-background";
-                    let boxContent: React.ReactNode = null;
-                    if (revealed) {
-                      if (isCorrect) {
-                        stateClasses = "border-green-500/60 bg-green-500/10 text-green-900 dark:text-green-100";
-                        boxClasses = "border-green-600 bg-green-600 text-white";
-                        boxContent = <Check className="h-3.5 w-3.5" strokeWidth={3} />;
-                      } else if (isSelected) {
-                        stateClasses = "border-red-500/60 bg-red-500/10 text-red-900 dark:text-red-100";
-                        boxClasses = "border-red-600 bg-red-600 text-white";
-                        boxContent = <X className="h-3.5 w-3.5" strokeWidth={3} />;
-                      } else {
-                        stateClasses = "border-border/40 bg-background/50 text-muted-foreground";
-                      }
-                    } else if (isSelected) {
-                      stateClasses = "border-primary bg-primary/5";
-                      boxClasses = "border-primary bg-primary text-primary-foreground";
-                      boxContent = <Check className="h-3.5 w-3.5" strokeWidth={3} />;
-                    }
-                    return (
-                      <li key={i}>
-                        <button
-                          type="button"
-                          disabled={revealed}
-                          onClick={() => setMcqSelected(i)}
-                          className={`w-full flex items-start gap-3 text-left p-3 sm:p-4 rounded-lg border transition-colors ${stateClasses} ${revealed ? "cursor-default" : "cursor-pointer"}`}
-                        >
-                          <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 text-[10px] font-bold ${boxClasses}`}>
-                            {boxContent ?? String.fromCharCode(65 + i)}
-                          </span>
-                          <span className="flex-1 text-sm sm:text-base leading-relaxed">
-                            <span className="font-semibold mr-1.5 opacity-70">{String.fromCharCode(65 + i)}.</span>
-                            {choice}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-
-            {revealed ? (
-              <div className="border-t border-dashed border-border/60 bg-muted/30 flex flex-col p-6 sm:p-8 animate-in slide-in-from-bottom-2 duration-200">
-                <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <span className="h-5 w-5 rounded-full bg-green-500/10 text-green-600 flex items-center justify-center text-[9px] font-bold">A</span>
-                  {isMcq ? "Explanation" : "Back"}
-                </div>
-                {isMcq && current?.choices && typeof current.correctIndex === "number" && (
-                  <p className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2">
-                    Correct answer: {String.fromCharCode(65 + current.correctIndex)}. {current.choices[current.correctIndex]}
-                  </p>
-                )}
-                <p className="text-base sm:text-lg text-foreground leading-relaxed whitespace-pre-wrap">
-                  {current?.back}
-                </p>
-              </div>
-            ) : (
-              <div className="border-t border-dashed border-border/30 p-4 sm:p-6 flex justify-center">
-                <Button
-                  onClick={() => {
-                    setRevealed(true);
-                    if (isQbank && isMcq) {
-                      handleExplain("full");
-                    }
-                  }}
-                  className="gap-2"
-                  size="lg"
-                  disabled={isMcq && mcqSelected === null}
-                >
-                  <Eye className="h-4 w-4" />
-                  {isMcq ? (mcqSelected === null ? "Pick an answer" : "Show Answer") : "Reveal Answer"}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </CardUI>
-      </div>
-
-      {revealed && (
-        <div className="flex flex-col sm:flex-row gap-3 animate-in fade-in duration-200">
-          <Button
-            variant="outline"
-            className="flex-1 gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 h-12"
-            onClick={markUnknown}
-          >
-            <X className="h-4 w-4" /> Still Learning
-            <span className="ml-auto text-xs opacity-50">2</span>
-          </Button>
-          <Button
-            className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white h-12"
-            onClick={markKnown}
-          >
-            <Check className="h-4 w-4" /> Got It
-            <span className="ml-auto text-xs opacity-70">1</span>
-          </Button>
         </div>
       )}
-
-      <div className="flex justify-between items-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={goPrev}
-          disabled={index === 0}
-          className="gap-1 text-muted-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" /> Previous
-        </Button>
-        {!revealed && (
-          <span className="text-xs text-muted-foreground">Press Space to reveal</span>
-        )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={goNext}
-          className="gap-1 text-muted-foreground"
-        >
-          Skip <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {revealed && (
-        <div className="rounded-xl border border-border/40 bg-muted/20 p-3">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
-            <Sparkles className="h-3 w-3" /> AI Tools
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <button
-              onClick={() => handleExplain("full")}
-              disabled={isExplaining}
-              className="flex flex-col items-center gap-1.5 rounded-lg border border-border/60 bg-background hover:bg-primary/5 hover:border-primary/30 p-3 transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed group"
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSaveAndExit}
+            className="gap-1.5 text-muted-foreground"
+          >
+            <Bookmark className="h-4 w-4" /> Save & Exit
+          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={shuffled ? "secondary" : "ghost"}
+              size="sm"
+              onClick={handleShuffle}
+              className="gap-1.5 h-8 text-xs"
             >
-              <Brain className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-              <span className="text-[11px] font-medium leading-tight text-foreground">Full Explanation</span>
-            </button>
-            <button
-              onClick={() => handleExplain("revision")}
-              disabled={isExplaining}
-              className="flex flex-col items-center gap-1.5 rounded-lg border border-border/60 bg-background hover:bg-primary/5 hover:border-primary/30 p-3 transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed group"
+              <Shuffle className="h-3.5 w-3.5" />
+              {shuffled ? "Shuffled" : "Shuffle"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRestart}
+              className="gap-1.5 h-8 text-xs text-muted-foreground"
             >
-              <ClipboardList className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-              <span className="text-[11px] font-medium leading-tight text-foreground">Revision Sheet</span>
-            </button>
-            <button
-              onClick={() => handleExplain("osce")}
-              disabled={isExplaining}
-              className="flex flex-col items-center gap-1.5 rounded-lg border border-border/60 bg-background hover:bg-primary/5 hover:border-primary/30 p-3 transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed group"
-            >
-              <Stethoscope className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-              <span className="text-[11px] font-medium leading-tight text-foreground">OSCE Questions</span>
-            </button>
+              <RotateCcw className="h-3.5 w-3.5" /> Restart
+            </Button>
           </div>
         </div>
-      )}
 
-      <Drawer.Root
-        open={explanation !== null}
-        onOpenChange={(open) => {
-          if (!open) { setExplanation(null); setExplainMode(null); }
-        }}
-      >
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
-          <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-background shadow-2xl outline-none" style={{ maxHeight: "88vh" }}>
-            <div className="mx-auto mt-3 mb-1 h-1 w-10 rounded-full bg-muted-foreground/20 shrink-0" />
-
-            <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                {explainMode === "full" && <Brain className="h-4 w-4 text-primary" />}
-                {explainMode === "revision" && <ClipboardList className="h-4 w-4 text-primary" />}
-                {explainMode === "osce" && <Stethoscope className="h-4 w-4 text-primary" />}
-                <span className="font-semibold text-sm text-foreground">
-                  {explainMode ? EXPLAIN_LABELS[explainMode] : "AI Explanation"}
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>
+              Card {index + 1} of {total}
+            </span>
+            <span className="flex gap-3">
+              {known.size > 0 && (
+                <span className="text-green-600 font-medium">
+                  ✓ {known.size} known
                 </span>
-                {isExplaining && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Generating…
-                  </div>
+              )}
+              {unknown.size > 0 && (
+                <span className="text-red-500 font-medium">
+                  ✗ {unknown.size} learning
+                </span>
+              )}
+            </span>
+          </div>
+          <Progress value={progress} className="h-1.5" />
+        </div>
+
+        <div
+          className={`relative transition-all duration-150 ${flipping ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
+        >
+          {revealed && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-px rounded-xl opacity-60 blur-xl animate-in fade-in duration-500"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(255,60,0,0.18), rgba(34,197,94,0.18))",
+                zIndex: -1,
+              }}
+            />
+          )}
+          <CardUI className="min-h-[280px] sm:min-h-[320px] border-border/50 shadow-lg overflow-hidden relative">
+            <CardContent className="p-0 flex flex-col h-full min-h-[280px] sm:min-h-[320px]">
+              <div className="flex-1 flex flex-col p-6 sm:p-8">
+                <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <span className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold">
+                    Q
+                  </span>
+                  Front
+                </div>
+                {(() => {
+                  const c = current as Card & {
+                    image?: string | null;
+                    sourceImage?: string | null;
+                    bbox?: string | null;
+                  };
+                  if (!c?.image) return null;
+                  return (
+                    <div className="mb-4">
+                      <CropCompare
+                        image={c.image}
+                        sourceImage={c.sourceImage}
+                        bbox={parseBbox(c.bbox)}
+                        onLightbox={setLightboxSrc}
+                      />
+                    </div>
+                  );
+                })()}
+                <p className="text-lg sm:text-xl font-medium text-foreground leading-relaxed">
+                  {current?.front}
+                </p>
+
+                {isMcq && current?.choices && (
+                  <ul className="mt-5 space-y-2 flex-1">
+                    {current.choices.map((choice, i) => {
+                      const isCorrect = i === current.correctIndex;
+                      const isSelected = mcqSelected === i;
+                      let stateClasses =
+                        "border-border/50 bg-background hover:bg-muted/50";
+                      let boxClasses = "border-border/60 bg-background";
+                      let boxContent: React.ReactNode = null;
+                      if (revealed) {
+                        if (isCorrect) {
+                          stateClasses =
+                            "border-green-500/60 bg-green-500/10 text-green-900 dark:text-green-100";
+                          boxClasses =
+                            "border-green-600 bg-green-600 text-white";
+                          boxContent = (
+                            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                          );
+                        } else if (isSelected) {
+                          stateClasses =
+                            "border-red-500/60 bg-red-500/10 text-red-900 dark:text-red-100";
+                          boxClasses = "border-red-600 bg-red-600 text-white";
+                          boxContent = (
+                            <X className="h-3.5 w-3.5" strokeWidth={3} />
+                          );
+                        } else {
+                          stateClasses =
+                            "border-border/40 bg-background/50 text-muted-foreground";
+                        }
+                      } else if (isSelected) {
+                        stateClasses = "border-primary bg-primary/5";
+                        boxClasses =
+                          "border-primary bg-primary text-primary-foreground";
+                        boxContent = (
+                          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                        );
+                      }
+                      return (
+                        <li key={i}>
+                          <button
+                            type="button"
+                            disabled={revealed}
+                            onClick={() => setMcqSelected(i)}
+                            className={`w-full flex items-start gap-3 text-left p-3 sm:p-4 rounded-lg border transition-colors ${stateClasses} ${revealed ? "cursor-default" : "cursor-pointer"}`}
+                          >
+                            <span
+                              className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 text-[10px] font-bold ${boxClasses}`}
+                            >
+                              {boxContent ?? String.fromCharCode(65 + i)}
+                            </span>
+                            <span className="flex-1 text-sm sm:text-base leading-relaxed">
+                              <span className="font-semibold mr-1.5 opacity-70">
+                                {String.fromCharCode(65 + i)}.
+                              </span>
+                              {choice}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
               </div>
-              <div className="flex items-center gap-1">
-                {!isExplaining && (["full", "revision", "osce"] as ExplainMode[]).map(m => (
-                  <button
-                    key={m}
-                    onClick={() => handleExplain(m)}
-                    className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-colors ${
-                      m === explainMode
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {m === "full" ? "Full" : m === "revision" ? "Revision" : "OSCE"}
-                  </button>
-                ))}
-                <button
-                  onClick={() => { setExplanation(null); setExplainMode(null); }}
-                  className="ml-1 h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
 
-            <div className="px-5 py-5 overflow-y-auto flex-1">
-              {isExplaining && (!explanation || explanation.length === 0) ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
-                  <div className="relative">
-                    <div className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+              {revealed ? (
+                <div className="border-t border-dashed border-border/60 bg-muted/30 flex flex-col p-6 sm:p-8 animate-in slide-in-from-bottom-2 duration-200">
+                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span className="h-5 w-5 rounded-full bg-green-500/10 text-green-600 flex items-center justify-center text-[9px] font-bold">
+                      A
+                    </span>
+                    {isMcq ? "Explanation" : "Back"}
                   </div>
-                  <p className="text-sm">Generating {explainMode ? EXPLAIN_LABELS[explainMode] : "explanation"}…</p>
+                  {isMcq &&
+                    current?.choices &&
+                    typeof current.correctIndex === "number" && (
+                      <p className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2">
+                        Correct answer:{" "}
+                        {String.fromCharCode(65 + current.correctIndex)}.{" "}
+                        {current.choices[current.correctIndex]}
+                      </p>
+                    )}
+                  <p className="text-base sm:text-lg text-foreground leading-relaxed whitespace-pre-wrap">
+                    {current?.back}
+                  </p>
                 </div>
               ) : (
-                <div className="prose prose-sm dark:prose-invert max-w-none
+                <div className="border-t border-dashed border-border/30 p-4 sm:p-6 flex justify-center">
+                  <Button
+                    onClick={() => {
+                      setRevealed(true);
+                      if (isQbank && isMcq) {
+                        handleExplain("full");
+                      }
+                    }}
+                    className="gap-2"
+                    size="lg"
+                    disabled={isMcq && mcqSelected === null}
+                  >
+                    <Eye className="h-4 w-4" />
+                    {isMcq
+                      ? mcqSelected === null
+                        ? "Pick an answer"
+                        : "Show Answer"
+                      : "Reveal Answer"}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </CardUI>
+        </div>
+
+        {revealed && (
+          <div className="flex flex-col sm:flex-row gap-3 animate-in fade-in duration-200">
+            <Button
+              variant="outline"
+              className="flex-1 gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 h-12"
+              onClick={markUnknown}
+            >
+              <X className="h-4 w-4" /> Still Learning
+              <span className="ml-auto text-xs opacity-50">2</span>
+            </Button>
+            <Button
+              className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white h-12"
+              onClick={markKnown}
+            >
+              <Check className="h-4 w-4" /> Got It
+              <span className="ml-auto text-xs opacity-70">1</span>
+            </Button>
+          </div>
+        )}
+
+        <div className="flex justify-between items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goPrev}
+            disabled={index === 0}
+            className="gap-1 text-muted-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" /> Previous
+          </Button>
+          {!revealed && (
+            <span className="text-xs text-muted-foreground">
+              Press Space to reveal
+            </span>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goNext}
+            className="gap-1 text-muted-foreground"
+          >
+            Skip <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {revealed && (
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-3">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3" /> AI Tools
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                onClick={() => handleExplain("full")}
+                disabled={isExplaining}
+                className="flex flex-col items-center gap-1.5 rounded-lg border border-border/60 bg-background hover:bg-primary/5 hover:border-primary/30 p-3 transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed group"
+              >
+                <Brain className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-medium leading-tight text-foreground">
+                  Full Explanation
+                </span>
+              </button>
+              <button
+                onClick={() => handleExplain("revision")}
+                disabled={isExplaining}
+                className="flex flex-col items-center gap-1.5 rounded-lg border border-border/60 bg-background hover:bg-primary/5 hover:border-primary/30 p-3 transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed group"
+              >
+                <ClipboardList className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-medium leading-tight text-foreground">
+                  Revision Sheet
+                </span>
+              </button>
+              <button
+                onClick={() => handleExplain("osce")}
+                disabled={isExplaining}
+                className="flex flex-col items-center gap-1.5 rounded-lg border border-border/60 bg-background hover:bg-primary/5 hover:border-primary/30 p-3 transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed group"
+              >
+                <Stethoscope className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-medium leading-tight text-foreground">
+                  OSCE Questions
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        <Drawer.Root
+          open={explanation !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setExplanation(null);
+              setExplainMode(null);
+            }
+          }}
+        >
+          <Drawer.Portal>
+            <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
+            <Drawer.Content
+              className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-background shadow-2xl outline-none"
+              style={{ maxHeight: "88vh" }}
+            >
+              <div className="mx-auto mt-3 mb-1 h-1 w-10 rounded-full bg-muted-foreground/20 shrink-0" />
+
+              <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  {explainMode === "full" && (
+                    <Brain className="h-4 w-4 text-primary" />
+                  )}
+                  {explainMode === "revision" && (
+                    <ClipboardList className="h-4 w-4 text-primary" />
+                  )}
+                  {explainMode === "osce" && (
+                    <Stethoscope className="h-4 w-4 text-primary" />
+                  )}
+                  <span className="font-semibold text-sm text-foreground">
+                    {explainMode
+                      ? EXPLAIN_LABELS[explainMode]
+                      : "AI Explanation"}
+                  </span>
+                  {isExplaining && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Generating…
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  {!isExplaining &&
+                    (["full", "revision", "osce"] as ExplainMode[]).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => handleExplain(m)}
+                        className={`h-7 px-2.5 rounded-md text-[11px] font-medium transition-colors ${
+                          m === explainMode
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {m === "full"
+                          ? "Full"
+                          : m === "revision"
+                            ? "Revision"
+                            : "OSCE"}
+                      </button>
+                    ))}
+                  <button
+                    onClick={() => {
+                      setExplanation(null);
+                      setExplainMode(null);
+                    }}
+                    className="ml-1 h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="px-5 py-5 overflow-y-auto flex-1">
+                {isExplaining && (!explanation || explanation.length === 0) ? (
+                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
+                    <div className="relative">
+                      <div className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                    </div>
+                    <p className="text-sm">
+                      Generating{" "}
+                      {explainMode
+                        ? EXPLAIN_LABELS[explainMode]
+                        : "explanation"}
+                      …
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    className="prose prose-sm dark:prose-invert max-w-none
                   prose-headings:font-semibold prose-headings:text-foreground
                   prose-h1:text-xl prose-h1:mt-6 prose-h1:mb-3
                   prose-h2:text-lg prose-h2:mt-5 prose-h2:mb-2 prose-h2:border-b prose-h2:border-border/40 prose-h2:pb-1
@@ -633,20 +837,21 @@ function StudyMode({ cards, deckId, deckName, deckKind, onExit, savePoint }: {
                   prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
                   prose-blockquote:border-primary/40 prose-blockquote:text-muted-foreground
                   prose-hr:border-border/40
-                ">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {explanation ?? ""}
-                  </ReactMarkdown>
-                  {isExplaining && (
-                    <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm align-middle" />
-                  )}
-                </div>
-              )}
-            </div>
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
-    </div>
+                "
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {explanation ?? ""}
+                    </ReactMarkdown>
+                    {isExplaining && (
+                      <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm align-middle" />
+                    )}
+                  </div>
+                )}
+              </div>
+            </Drawer.Content>
+          </Drawer.Portal>
+        </Drawer.Root>
+      </div>
     </>
   );
 }
@@ -656,7 +861,7 @@ export default function DeckDetail() {
   const deckId = Number(id);
   const { data: deck, isLoading: isLoadingDeck } = useGetDeck(deckId);
   const { data: cards, isLoading: isLoadingCards } = useListDeckCards(deckId);
-  
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -664,7 +869,9 @@ export default function DeckDetail() {
   const deleteCard = useDeleteCard();
   const [isExporting, setIsExporting] = useState(false);
   const [studyMode, setStudyMode] = useState(false);
-  const [activeSavePoint, setActiveSavePoint] = useState<StudySavePoint | null>(null);
+  const [activeSavePoint, setActiveSavePoint] = useState<StudySavePoint | null>(
+    null,
+  );
   const [resumePrompt, setResumePrompt] = useState<StudySavePoint | null>(null);
 
   const handleStudyClick = useCallback(() => {
@@ -678,7 +885,9 @@ export default function DeckDetail() {
   }, [deckId]);
 
   const deckWithSubs = deck as DeckWithSubDecks | undefined;
-  const subDecks = [...(deckWithSubs?.subDecks ?? [])].sort((a, b) => a.name.localeCompare(b.name));
+  const subDecks = [...(deckWithSubs?.subDecks ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
   const hasSubDecks = subDecks.length > 0;
 
   const handleExportJson = async () => {
@@ -700,9 +909,17 @@ export default function DeckDetail() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast({ title: "Exported", description: `Saved ${deck.name}.ankigen.json — import it on any device from the Library page.` });
+      toast({
+        title: "Exported",
+        description: `Saved ${deck.name}.ankigen.json — import it on any device from the Library page.`,
+      });
     } catch (err) {
-      toast({ title: "Export failed", description: err instanceof Error ? err.message : "Something went wrong.", variant: "destructive" });
+      toast({
+        title: "Export failed",
+        description:
+          err instanceof Error ? err.message : "Something went wrong.",
+        variant: "destructive",
+      });
     } finally {
       setIsExporting(false);
     }
@@ -731,9 +948,17 @@ export default function DeckDetail() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast({ title: "Export complete", description: `Downloaded ${deck.name}.apkg — ready to import into Anki.` });
+      toast({
+        title: "Export complete",
+        description: `Downloaded ${deck.name}.apkg — ready to import into Anki.`,
+      });
     } catch (err) {
-      toast({ title: "Export failed", description: err instanceof Error ? err.message : "Something went wrong.", variant: "destructive" });
+      toast({
+        title: "Export failed",
+        description:
+          err instanceof Error ? err.message : "Something went wrong.",
+        variant: "destructive",
+      });
     } finally {
       setIsExporting(false);
     }
@@ -743,7 +968,9 @@ export default function DeckDetail() {
     return (
       <div className="space-y-8">
         <Skeleton className="h-10 w-1/3" />
-        <div className="grid gap-4"><Skeleton className="h-40 w-full" /></div>
+        <div className="grid gap-4">
+          <Skeleton className="h-40 w-full" />
+        </div>
       </div>
     );
   }
@@ -758,7 +985,9 @@ export default function DeckDetail() {
     return (
       <div className="space-y-6 animate-in fade-in duration-300 pb-20">
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-2xl font-serif font-bold text-primary tracking-tight">{deck.name}</h1>
+          <h1 className="text-2xl font-serif font-bold text-primary tracking-tight">
+            {deck.name}
+          </h1>
           {(deck as Deck & { kind?: string }).kind === "qbank" ? (
             <Badge className="gap-1.5 bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20 hover:bg-violet-500/10">
               <Stethoscope className="h-3.5 w-3.5" /> Question Bank
@@ -775,17 +1004,28 @@ export default function DeckDetail() {
           deckName={deck.name}
           deckKind={(deck as Deck & { kind?: string }).kind}
           savePoint={activeSavePoint}
-          onExit={() => { setStudyMode(false); setActiveSavePoint(null); }}
+          onExit={() => {
+            setStudyMode(false);
+            setActiveSavePoint(null);
+          }}
         />
       </div>
     );
   }
 
   if (resumePrompt) {
-    const savedTime = new Date(resumePrompt.savedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-    const progress = resumePrompt.cardIds.length > 0
-      ? Math.round(((resumePrompt.knownIds.length + resumePrompt.unknownIds.length) / resumePrompt.cardIds.length) * 100)
-      : 0;
+    const savedTime = new Date(resumePrompt.savedAt).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+    const progress =
+      resumePrompt.cardIds.length > 0
+        ? Math.round(
+            ((resumePrompt.knownIds.length + resumePrompt.unknownIds.length) /
+              resumePrompt.cardIds.length) *
+              100,
+          )
+        : 0;
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-300 px-4">
         <div className="w-full max-w-sm space-y-6">
@@ -793,25 +1033,37 @@ export default function DeckDetail() {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-2">
               <Bookmark className="h-7 w-7 text-primary" />
             </div>
-            <h2 className="text-xl font-serif font-bold text-primary">Resume where you left off?</h2>
-            <p className="text-sm text-muted-foreground">You saved a study session on {savedTime}</p>
+            <h2 className="text-xl font-serif font-bold text-primary">
+              Resume where you left off?
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              You saved a study session on {savedTime}
+            </p>
           </div>
 
           <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Card</span>
-              <span className="font-medium">{resumePrompt.index + 1} / {resumePrompt.cardIds.length}</span>
+              <span className="font-medium">
+                {resumePrompt.index + 1} / {resumePrompt.cardIds.length}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Got it</span>
-              <span className="font-medium text-green-600">{resumePrompt.knownIds.length}</span>
+              <span className="font-medium text-green-600">
+                {resumePrompt.knownIds.length}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Still learning</span>
-              <span className="font-medium text-red-500">{resumePrompt.unknownIds.length}</span>
+              <span className="font-medium text-red-500">
+                {resumePrompt.unknownIds.length}
+              </span>
             </div>
             <Progress value={progress} className="h-1.5 mt-1" />
-            <p className="text-xs text-center text-muted-foreground">{progress}% answered</p>
+            <p className="text-xs text-center text-muted-foreground">
+              {progress}% answered
+            </p>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -823,7 +1075,8 @@ export default function DeckDetail() {
                 setStudyMode(true);
               }}
             >
-              <Play className="h-4 w-4" /> Continue from card {resumePrompt.index + 1}
+              <Play className="h-4 w-4" /> Continue from card{" "}
+              {resumePrompt.index + 1}
             </Button>
             <Button
               variant="outline"
@@ -837,7 +1090,11 @@ export default function DeckDetail() {
             >
               <RotateCcw className="h-4 w-4" /> Start fresh
             </Button>
-            <Button variant="ghost" className="w-full" onClick={() => setResumePrompt(null)}>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => setResumePrompt(null)}
+            >
               <ArrowLeft className="h-4 w-4 mr-1.5" /> Back to deck
             </Button>
           </div>
@@ -850,11 +1107,16 @@ export default function DeckDetail() {
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <Link href="/decks" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-2 transition-colors">
+          <Link
+            href="/decks"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-2 transition-colors"
+          >
             <ArrowLeft className="mr-1 h-4 w-4" /> Back to Library
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl font-serif font-bold text-primary tracking-tight">{deck.name}</h1>
+            <h1 className="text-3xl font-serif font-bold text-primary tracking-tight">
+              {deck.name}
+            </h1>
             {(deck as Deck & { kind?: string }).kind === "qbank" && (
               <Badge className="gap-1.5 bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20 hover:bg-violet-500/10">
                 <Stethoscope className="h-3.5 w-3.5" /> Question Bank
@@ -866,19 +1128,26 @@ export default function DeckDetail() {
               </Badge>
             )}
           </div>
-          {deck.description && <p className="text-muted-foreground mt-1">{deck.description}</p>}
+          {deck.description && (
+            <p className="text-muted-foreground mt-1">{deck.description}</p>
+          )}
         </div>
         <div className="flex gap-2 shrink-0 flex-wrap">
           {cardList.length > 0 && (
-            <Button 
-              variant="outline" 
-              onClick={handleStudyClick} 
+            <Button
+              variant="outline"
+              onClick={handleStudyClick}
               className="gap-2"
             >
               <BookOpen className="h-4 w-4" />
               Study
               {getSavePoint(deckId)?.index ? (
-                <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">resume</Badge>
+                <Badge
+                  variant="secondary"
+                  className="ml-1 h-4 px-1.5 text-[10px]"
+                >
+                  resume
+                </Badge>
               ) : null}
             </Button>
           )}
@@ -891,18 +1160,32 @@ export default function DeckDetail() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuItem className="gap-2.5 cursor-pointer" onClick={handleExport}>
+              <DropdownMenuItem
+                className="gap-2.5 cursor-pointer"
+                onClick={handleExport}
+              >
                 <Package className="h-4 w-4 text-primary" />
                 <div>
-                  <div className="text-sm font-medium">Anki package (.apkg)</div>
-                  <div className="text-xs text-muted-foreground">Import into Anki desktop/mobile</div>
+                  <div className="text-sm font-medium">
+                    Anki package (.apkg)
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Import into Anki desktop/mobile
+                  </div>
                 </div>
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2.5 cursor-pointer" onClick={handleExportJson}>
+              <DropdownMenuItem
+                className="gap-2.5 cursor-pointer"
+                onClick={handleExportJson}
+              >
                 <FileJson className="h-4 w-4 text-blue-500" />
                 <div>
-                  <div className="text-sm font-medium">AnkiGen file (.json)</div>
-                  <div className="text-xs text-muted-foreground">Move this deck to another device</div>
+                  <div className="text-sm font-medium">
+                    AnkiGen file (.json)
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Move this deck to another device
+                  </div>
                 </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -912,9 +1195,11 @@ export default function DeckDetail() {
 
       {hasSubDecks && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold tracking-tight border-b pb-2">Sub-Decks</h2>
+          <h2 className="text-lg font-semibold tracking-tight border-b pb-2">
+            Sub-Decks
+          </h2>
           <div className="grid gap-2 sm:grid-cols-2">
-            {subDecks.map(sub => (
+            {subDecks.map((sub) => (
               <Link key={sub.id} href={`/decks/${sub.id}`}>
                 <CardUI className="hover:border-primary/40 hover:shadow-md transition-all cursor-pointer border-border/40">
                   <CardContent className="flex items-center gap-3 py-3 px-4">
@@ -941,11 +1226,15 @@ export default function DeckDetail() {
             <h2 className="text-xl font-medium tracking-tight">
               Cards ({cardList.length})
               {hasSubDecks && cardList.length > 0 && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">across all sub-decks</span>
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  across all sub-decks
+                </span>
               )}
             </h2>
             {(() => {
-              const visualCount = cardList.filter(c => (c as Card & { image?: string | null }).image).length;
+              const visualCount = cardList.filter(
+                (c) => (c as Card & { image?: string | null }).image,
+              ).length;
               return visualCount > 0 ? (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
                   <ImageIcon className="h-3 w-3" /> {visualCount} with image
@@ -957,7 +1246,9 @@ export default function DeckDetail() {
 
         {isLoadingCards ? (
           <div className="space-y-4">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full" />)}
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-32 w-full" />
+            ))}
           </div>
         ) : cardList.length === 0 ? (
           <div className="text-center py-12 bg-card rounded-lg border border-dashed">
@@ -966,29 +1257,44 @@ export default function DeckDetail() {
         ) : (
           <div className="grid gap-4">
             {cardList.map((card, idx) => (
-              <EditableCard 
-                key={card.id} 
+              <EditableCard
+                key={card.id}
                 card={card}
-                subDeckName={hasSubDecks ? subDecks.find(s => s.id === card.deckId)?.name : undefined}
+                subDeckName={
+                  hasSubDecks
+                    ? subDecks.find((s) => s.id === card.deckId)?.name
+                    : undefined
+                }
                 index={idx}
-                onUpdate={(id, data) => updateCard.mutate(
-                  { id, data },
-                  {
-                    onSuccess: () => {
-                      queryClient.invalidateQueries({ queryKey: getListDeckCardsQueryKey(deckId) });
-                      toast({ title: "Card updated" });
-                    }
-                  }
-                )}
+                onUpdate={(id, data) =>
+                  updateCard.mutate(
+                    { id, data },
+                    {
+                      onSuccess: () => {
+                        queryClient.invalidateQueries({
+                          queryKey: getListDeckCardsQueryKey(deckId),
+                        });
+                        toast({ title: "Card updated" });
+                      },
+                    },
+                  )
+                }
                 onDelete={(id) => {
                   if (confirm("Delete this card?")) {
-                    deleteCard.mutate({ id }, {
-                      onSuccess: () => {
-                        queryClient.invalidateQueries({ queryKey: getListDeckCardsQueryKey(deckId) });
-                        queryClient.invalidateQueries({ queryKey: getGetDeckQueryKey(deckId) });
-                        toast({ title: "Card deleted" });
-                      }
-                    });
+                    deleteCard.mutate(
+                      { id },
+                      {
+                        onSuccess: () => {
+                          queryClient.invalidateQueries({
+                            queryKey: getListDeckCardsQueryKey(deckId),
+                          });
+                          queryClient.invalidateQueries({
+                            queryKey: getGetDeckQueryKey(deckId),
+                          });
+                          toast({ title: "Card deleted" });
+                        },
+                      },
+                    );
                   }
                 }}
               />
@@ -1000,17 +1306,17 @@ export default function DeckDetail() {
   );
 }
 
-function EditableCard({ 
-  card, 
+function EditableCard({
+  card,
   index,
   subDeckName,
-  onUpdate, 
-  onDelete 
-}: { 
+  onUpdate,
+  onDelete,
+}: {
   card: Card;
   index: number;
   subDeckName?: string;
-  onUpdate: (id: number, data: { front: string; back: string }) => void; 
+  onUpdate: (id: number, data: { front: string; back: string }) => void;
   onDelete: (id: number) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -1035,19 +1341,23 @@ function EditableCard({
       <CardUI className="border-primary/40 shadow-md ring-1 ring-primary/20">
         <CardContent className="p-4 space-y-4">
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Front</label>
-            <Textarea 
-              value={front} 
-              onChange={e => setFront(e.target.value)} 
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Front
+            </label>
+            <Textarea
+              value={front}
+              onChange={(e) => setFront(e.target.value)}
               className="min-h-[80px] font-medium"
               autoFocus
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Back</label>
-            <Textarea 
-              value={back} 
-              onChange={e => setBack(e.target.value)} 
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Back
+            </label>
+            <Textarea
+              value={back}
+              onChange={(e) => setBack(e.target.value)}
               className="min-h-[100px]"
             />
           </div>
@@ -1065,7 +1375,7 @@ function EditableCard({
   }
 
   return (
-    <CardUI 
+    <CardUI
       className="group hover-elevate transition-all duration-300 border-border/40 animate-in fade-in slide-in-from-bottom-2"
       style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
     >
@@ -1085,14 +1395,20 @@ function EditableCard({
                 <ImageIcon className="h-2.5 w-2.5" /> Visual
               </span>
             )}
-            {card.cardType === "mcq" && Array.isArray(card.choices) && card.choices.length > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-purple-600 bg-purple-500/10 px-1.5 py-0.5 rounded-full">
-                <ClipboardList className="h-2.5 w-2.5" /> MCQ
-              </span>
-            )}
+            {card.cardType === "mcq" &&
+              Array.isArray(card.choices) &&
+              card.choices.length > 0 && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-purple-600 bg-purple-500/10 px-1.5 py-0.5 rounded-full">
+                  <ClipboardList className="h-2.5 w-2.5" /> MCQ
+                </span>
+              )}
           </div>
           {(() => {
-            const c = card as Card & { image?: string | null; sourceImage?: string | null; bbox?: string | null };
+            const c = card as Card & {
+              image?: string | null;
+              sourceImage?: string | null;
+              bbox?: string | null;
+            };
             if (!c.image) return null;
             return (
               <div className="mb-3">
@@ -1104,18 +1420,34 @@ function EditableCard({
               </div>
             );
           })()}
-          <p className="font-medium text-foreground whitespace-pre-wrap leading-relaxed">{card.front}</p>
+          <p className="font-medium text-foreground whitespace-pre-wrap leading-relaxed">
+            {card.front}
+          </p>
         </div>
         <div className="flex-1 p-4 sm:p-5">
-          <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Back</div>
-          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{card.back}</p>
+          <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Back
+          </div>
+          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+            {card.back}
+          </p>
         </div>
-        
+
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1 bg-background/80 backdrop-blur-sm rounded-md shadow-sm p-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setIsEditing(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
+            onClick={() => setIsEditing(true)}
+          >
             <Edit2 className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => onDelete(card.id)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={() => onDelete(card.id)}
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>

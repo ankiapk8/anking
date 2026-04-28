@@ -1,6 +1,13 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import { logger } from "./logger";
 
@@ -75,7 +82,7 @@ function appendHistory(entry: BuildHistoryEntry): void {
 
 export function getBuildHistory(limit = 5, slot?: Slot): BuildHistoryEntry[] {
   const all = readHistory();
-  return (slot ? all.filter(e => e.slot === slot) : all).slice(0, limit);
+  return (slot ? all.filter((e) => e.slot === slot) : all).slice(0, limit);
 }
 
 type TargetConfig = {
@@ -103,7 +110,10 @@ export function getStoredTargetHost(slot: Slot = "published"): string | null {
   return null;
 }
 
-export function setStoredTargetHost(host: string, slot: Slot = "published"): void {
+export function setStoredTargetHost(
+  host: string,
+  slot: Slot = "published",
+): void {
   mkdirSync(path.dirname(TARGET_CONFIG_PATH), { recursive: true });
   const existing = readTargetConfig();
   const hosts: Partial<Record<Slot, string>> = { ...(existing?.hosts ?? {}) };
@@ -124,8 +134,24 @@ export type BuildState = {
 };
 
 const slotStates: Record<Slot, BuildState> = {
-  dev: { status: "idle", slot: "dev", targetHost: null, startedAt: null, finishedAt: null, error: null, logTail: [] },
-  published: { status: "idle", slot: "published", targetHost: null, startedAt: null, finishedAt: null, error: null, logTail: [] },
+  dev: {
+    status: "idle",
+    slot: "dev",
+    targetHost: null,
+    startedAt: null,
+    finishedAt: null,
+    error: null,
+    logTail: [],
+  },
+  published: {
+    status: "idle",
+    slot: "published",
+    targetHost: null,
+    startedAt: null,
+    finishedAt: null,
+    error: null,
+    logTail: [],
+  },
 };
 
 let currentChild: ChildProcess | null = null;
@@ -186,8 +212,12 @@ function appendLog(slot: Slot, line: string) {
 
 function buildSupported(): boolean {
   if (!existsSync(BUILD_SCRIPT)) return false;
-  if (!existsSync(path.join(PROJECT_ROOT, "artifacts/anki-generator/android"))) return false;
-  const androidHome = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT || "/home/runner/android-sdk";
+  if (!existsSync(path.join(PROJECT_ROOT, "artifacts/anki-generator/android")))
+    return false;
+  const androidHome =
+    process.env.ANDROID_HOME ||
+    process.env.ANDROID_SDK_ROOT ||
+    "/home/runner/android-sdk";
   if (!existsSync(androidHome)) return false;
   if (!existsSync(path.join(androidHome, "platforms"))) return false;
   return true;
@@ -195,14 +225,23 @@ function buildSupported(): boolean {
 
 function isUsableHost(host: string): boolean {
   if (!host) return false;
-  if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") return false;
-  if (host.startsWith("172.") || host.startsWith("10.") || host.startsWith("192.168.")) return false;
+  if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0")
+    return false;
+  if (
+    host.startsWith("172.") ||
+    host.startsWith("10.") ||
+    host.startsWith("192.168.")
+  )
+    return false;
   return host.includes(".");
 }
 
 // ---- Source hash so we can skip rebuilds when nothing changed -------------
 
-const SOURCE_DIRS = ["artifacts/anki-generator/src", "artifacts/anki-generator/public"];
+const SOURCE_DIRS = [
+  "artifacts/anki-generator/src",
+  "artifacts/anki-generator/public",
+];
 const SOURCE_FILES = [
   "artifacts/anki-generator/index.html",
   "artifacts/anki-generator/package.json",
@@ -229,12 +268,21 @@ function walk(dir: string, hash: ReturnType<typeof createHash>) {
   }
   for (const name of entries.sort()) {
     if (name.startsWith(".")) continue;
-    if (name === "node_modules" || name === "dist" || name === "android") continue;
-    if (name.startsWith("anki-cards") && (name.endsWith(".apk") || name.endsWith(".apk.json"))) continue;
+    if (name === "node_modules" || name === "dist" || name === "android")
+      continue;
+    if (
+      name.startsWith("anki-cards") &&
+      (name.endsWith(".apk") || name.endsWith(".apk.json"))
+    )
+      continue;
     if (name === "apk-history.json" || name === "apk-target.json") continue;
     const full = path.join(dir, name);
     let st;
-    try { st = statSync(full); } catch { continue; }
+    try {
+      st = statSync(full);
+    } catch {
+      continue;
+    }
     if (st.isDirectory()) walk(full, hash);
     else if (st.isFile()) hashFile(hash, full);
   }
@@ -249,7 +297,8 @@ export function computeSourceHash(): string {
   }
   const hash = createHash("sha256");
   for (const dir of SOURCE_DIRS) walk(path.join(PROJECT_ROOT, dir), hash);
-  for (const file of SOURCE_FILES) hashFile(hash, path.join(PROJECT_ROOT, file));
+  for (const file of SOURCE_FILES)
+    hashFile(hash, path.join(PROJECT_ROOT, file));
   const value = hash.digest("hex").slice(0, 16);
   cachedSourceHash = { value, computedAt: now };
   return value;
@@ -296,7 +345,10 @@ function startBuildNow(slot: Slot, host: string): void {
   state.logTail = [];
 
   const apiBase = `https://${host}/api`;
-  appendLog(slot, `[${slot}] Building APK for ${apiBase} (source ${sourceHash})`);
+  appendLog(
+    slot,
+    `[${slot}] Building APK for ${apiBase} (source ${sourceHash})`,
+  );
   logger.info({ host, apiBase, slot, sourceHash }, "Starting APK rebuild");
 
   const child = spawn("bash", [BUILD_SCRIPT], {
@@ -340,7 +392,11 @@ function startBuildNow(slot: Slot, host: string): void {
       state.status = "ready";
       appendLog(slot, "Build finished successfully");
       logger.info({ slot }, "APK rebuild succeeded");
-      try { sizeBytes = statSync(SLOT_FILES[slot].apk).size; } catch { /* ignore */ }
+      try {
+        sizeBytes = statSync(SLOT_FILES[slot].apk).size;
+      } catch {
+        /* ignore */
+      }
     } else {
       state.status = "failed";
       state.error = `Build exited with code ${code}`;
@@ -369,7 +425,7 @@ export function startRebuild(slot: Slot, host: string): BuildState {
   const state = slotStates[slot];
   if (state.status === "building") return getBuildState(slot);
   if (currentChild && currentSlot && currentSlot !== slot) {
-    if (!queue.some(q => q.slot === slot)) {
+    if (!queue.some((q) => q.slot === slot)) {
       queue.push({ slot, host });
       state.status = "queued";
       state.targetHost = host;
@@ -397,7 +453,11 @@ function devHostFromEnv(): string | null {
 }
 
 function publishedHostFromEnv(): string | null {
-  return getStoredTargetHost("published") || process.env.REPLIT_DEPLOYMENT_DOMAIN || null;
+  return (
+    getStoredTargetHost("published") ||
+    process.env.REPLIT_DEPLOYMENT_DOMAIN ||
+    null
+  );
 }
 
 export function resolveHostForSlot(slot: Slot): string | null {
@@ -413,9 +473,13 @@ export function autoConfigureFromEnv(): void {
       const host = slot === "dev" ? dev : published;
       slotStates[slot].status = "unsupported";
       slotStates[slot].targetHost = host;
-      slotStates[slot].error = "APK build tooling not available in this environment";
+      slotStates[slot].error =
+        "APK build tooling not available in this environment";
     }
-    logger.warn({ dev, published }, "APK build tooling unavailable; serving stale APKs");
+    logger.warn(
+      { dev, published },
+      "APK build tooling unavailable; serving stale APKs",
+    );
     return;
   }
 
@@ -453,7 +517,10 @@ function startSourceHashWatcher(): void {
       if (meta?.sourceHash === current && meta?.host === host) continue;
       const state = slotStates[slot];
       if (state.status === "building") continue;
-      logger.info({ slot, host, sourceHash: current }, "Source changed; auto-rebuilding APK");
+      logger.info(
+        { slot, host, sourceHash: current },
+        "Source changed; auto-rebuilding APK",
+      );
       startRebuild(slot, host);
     }
   }, 30_000).unref();

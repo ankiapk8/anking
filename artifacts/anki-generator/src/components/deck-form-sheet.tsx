@@ -1,12 +1,29 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCreateDeck, useUpdateDeck, useListDecks, getListDecksQueryKey } from "@workspace/api-client-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  useCreateDeck,
+  useUpdateDeck,
+  useListDecks,
+  getListDecksQueryKey,
+} from "@workspace/api-client-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, FolderOpen, Layers, FileText, Plus, X } from "lucide-react";
@@ -26,14 +43,19 @@ interface DeckFormSheetProps {
   onDone?: () => void;
 }
 
-function buildParentOptions(allDecks: DeckWithParent[], excludeId?: number): { id: number; label: string; depth: number }[] {
-  const rootDecks = allDecks.filter(d => !d.parentId && d.id !== excludeId);
+function buildParentOptions(
+  allDecks: DeckWithParent[],
+  excludeId?: number,
+): { id: number; label: string; depth: number }[] {
+  const rootDecks = allDecks.filter((d) => !d.parentId && d.id !== excludeId);
   const byParent = new Map<number, DeckWithParent[]>();
-  allDecks.filter(d => d.parentId).forEach(d => {
-    const pid = d.parentId!;
-    if (!byParent.has(pid)) byParent.set(pid, []);
-    byParent.get(pid)!.push(d);
-  });
+  allDecks
+    .filter((d) => d.parentId)
+    .forEach((d) => {
+      const pid = d.parentId!;
+      if (!byParent.has(pid)) byParent.set(pid, []);
+      byParent.get(pid)!.push(d);
+    });
 
   const result: { id: number; label: string; depth: number }[] = [];
 
@@ -53,7 +75,12 @@ function buildParentOptions(allDecks: DeckWithParent[], excludeId?: number): { i
   return result;
 }
 
-export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormSheetProps) {
+export function DeckFormSheet({
+  open,
+  onOpenChange,
+  mode,
+  onDone,
+}: DeckFormSheetProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createDeck = useCreateDeck();
@@ -68,14 +95,21 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
   const [subSlots, setSubSlots] = useState<{ id: string; name: string }[]>([]);
 
   const excludeId = mode.type === "edit" ? mode.deck.id : undefined;
-  const parentOptions = buildParentOptions((allDecks as DeckWithParent[]) ?? [], excludeId);
+  const parentOptions = buildParentOptions(
+    (allDecks as DeckWithParent[]) ?? [],
+    excludeId,
+  );
 
   useEffect(() => {
     if (!open) return;
     if (mode.type === "new-topic") {
-      setName(""); setDescription(""); setParentId("none"); setSubSlots([]);
+      setName("");
+      setDescription("");
+      setParentId("none");
+      setSubSlots([]);
     } else if (mode.type === "new-subdeck") {
-      setName(""); setDescription("");
+      setName("");
+      setDescription("");
       setParentId(mode.parentId?.toString() ?? "none");
       setSubSlots([]);
     } else {
@@ -90,12 +124,16 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
 
   const addSubSlot = () => {
     if (subSlots.length >= 8) return;
-    setSubSlots(prev => [...prev, { id: `${Date.now()}-${Math.random()}`, name: "" }]);
+    setSubSlots((prev) => [
+      ...prev,
+      { id: `${Date.now()}-${Math.random()}`, name: "" },
+    ]);
   };
 
-  const removeSubSlot = (id: string) => setSubSlots(prev => prev.filter(s => s.id !== id));
+  const removeSubSlot = (id: string) =>
+    setSubSlots((prev) => prev.filter((s) => s.id !== id));
   const updateSubSlot = (id: string, name: string) =>
-    setSubSlots(prev => prev.map(s => s.id === id ? { ...s, name } : s));
+    setSubSlots((prev) => prev.map((s) => (s.id === id ? { ...s, name } : s)));
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -105,27 +143,41 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
       if (mode.type === "edit") {
         await updateDeck.mutateAsync({
           id: mode.deck.id,
-          data: { name: name.trim(), description: description.trim() || null, parentId: resolvedParentId },
+          data: {
+            name: name.trim(),
+            description: description.trim() || null,
+            parentId: resolvedParentId,
+          },
         });
         toast({ title: "Deck updated." });
       } else {
-        const created = await createDeck.mutateAsync({
-          data: { name: name.trim(), description: description.trim() || null, parentId: resolvedParentId },
-        }) as DeckWithParent;
+        const created = (await createDeck.mutateAsync({
+          data: {
+            name: name.trim(),
+            description: description.trim() || null,
+            parentId: resolvedParentId,
+          },
+        })) as DeckWithParent;
 
         if (mode.type === "new-topic" && subSlots.length > 0) {
-          const validSlots = subSlots.filter(s => s.name.trim());
+          const validSlots = subSlots.filter((s) => s.name.trim());
           for (const s of validSlots) {
-            await createDeck.mutateAsync({ data: { name: s.name.trim(), parentId: created.id } });
+            await createDeck.mutateAsync({
+              data: { name: s.name.trim(), parentId: created.id },
+            });
           }
           toast({
             title: "Topic created!",
-            description: validSlots.length > 0
-              ? `"${name}" created with ${validSlots.length} sub-deck${validSlots.length !== 1 ? "s" : ""}.`
-              : `"${name}" topic created.`,
+            description:
+              validSlots.length > 0
+                ? `"${name}" created with ${validSlots.length} sub-deck${validSlots.length !== 1 ? "s" : ""}.`
+                : `"${name}" topic created.`,
           });
         } else {
-          toast({ title: mode.type === "new-topic" ? "Topic created!" : "Deck created!" });
+          toast({
+            title:
+              mode.type === "new-topic" ? "Topic created!" : "Deck created!",
+          });
         }
       }
 
@@ -140,18 +192,29 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
   };
 
   const title =
-    mode.type === "new-topic" ? "New Main Topic" :
-    mode.type === "new-subdeck" ? "New Sub-deck" :
-    "Edit Deck";
+    mode.type === "new-topic"
+      ? "New Main Topic"
+      : mode.type === "new-subdeck"
+        ? "New Sub-deck"
+        : "Edit Deck";
 
   const description_ =
-    mode.type === "new-topic" ? "Create a topic to organise related decks under one folder." :
-    mode.type === "new-subdeck" ? "Create a deck inside an existing parent deck." :
-    "Update this deck's name, description, or parent assignment.";
+    mode.type === "new-topic"
+      ? "Create a topic to organise related decks under one folder."
+      : mode.type === "new-subdeck"
+        ? "Create a deck inside an existing parent deck."
+        : "Update this deck's name, description, or parent assignment.";
 
-  const Icon = mode.type === "new-topic" ? FolderOpen : mode.type === "new-subdeck" ? FileText : Layers;
+  const Icon =
+    mode.type === "new-topic"
+      ? FolderOpen
+      : mode.type === "new-subdeck"
+        ? FileText
+        : Layers;
 
-  const selectedParentOpt = parentOptions.find(o => o.id.toString() === parentId);
+  const selectedParentOpt = parentOptions.find(
+    (o) => o.id.toString() === parentId,
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -170,13 +233,18 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
           {/* Name */}
           <div className="space-y-1.5">
             <Label htmlFor="deck-name">
-              {mode.type === "new-topic" ? "Topic Name" : "Deck Name"} <span className="text-destructive">*</span>
+              {mode.type === "new-topic" ? "Topic Name" : "Deck Name"}{" "}
+              <span className="text-destructive">*</span>
             </Label>
             <Input
               id="deck-name"
               value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder={mode.type === "new-topic" ? "e.g. Biology, Machine Learning…" : "e.g. Chapter 1, Week 3 Notes…"}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={
+                mode.type === "new-topic"
+                  ? "e.g. Biology, Machine Learning…"
+                  : "e.g. Chapter 1, Week 3 Notes…"
+              }
               autoFocus
               disabled={isSaving}
             />
@@ -184,11 +252,16 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label htmlFor="deck-desc">Description <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <Label htmlFor="deck-desc">
+              Description{" "}
+              <span className="text-muted-foreground font-normal">
+                (optional)
+              </span>
+            </Label>
             <Textarea
               id="deck-desc"
               value={description}
-              onChange={e => setDescription(e.target.value)}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this for?"
               rows={2}
               className="resize-none"
@@ -202,43 +275,76 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
               <Label className="flex items-center gap-1.5">
                 <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
                 Parent Deck{" "}
-                {mode.type === "new-subdeck" && <span className="text-destructive">*</span>}
-                {mode.type === "edit" && <span className="text-muted-foreground font-normal">(optional)</span>}
+                {mode.type === "new-subdeck" && (
+                  <span className="text-destructive">*</span>
+                )}
+                {mode.type === "edit" && (
+                  <span className="text-muted-foreground font-normal">
+                    (optional)
+                  </span>
+                )}
               </Label>
-              <Select value={parentId} onValueChange={setParentId} disabled={isSaving}>
+              <Select
+                value={parentId}
+                onValueChange={setParentId}
+                disabled={isSaving}
+              >
                 <SelectTrigger>
-                  {parentId === "none" || !selectedParentOpt
-                    ? <span className="text-muted-foreground text-sm">{mode.type === "new-subdeck" ? "Select a parent deck…" : "No parent — standalone"}</span>
-                    : <span className="text-sm truncate">{selectedParentOpt.label}</span>
-                  }
+                  {parentId === "none" || !selectedParentOpt ? (
+                    <span className="text-muted-foreground text-sm">
+                      {mode.type === "new-subdeck"
+                        ? "Select a parent deck…"
+                        : "No parent — standalone"}
+                    </span>
+                  ) : (
+                    <span className="text-sm truncate">
+                      {selectedParentOpt.label}
+                    </span>
+                  )}
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
-                  {mode.type === "edit" && <SelectItem value="none">No parent — standalone deck</SelectItem>}
-                  {parentOptions.map(opt => (
-                    <SelectItem key={opt.id} value={opt.id.toString()} className="py-1.5">
+                  {mode.type === "edit" && (
+                    <SelectItem value="none">
+                      No parent — standalone deck
+                    </SelectItem>
+                  )}
+                  {parentOptions.map((opt) => (
+                    <SelectItem
+                      key={opt.id}
+                      value={opt.id.toString()}
+                      className="py-1.5"
+                    >
                       <span className="flex items-center gap-1 min-w-0">
                         {opt.depth > 0 && (
                           <span className="text-muted-foreground shrink-0 text-xs font-mono">
-                            {"  ".repeat(opt.depth - 1)}{"└─"}
+                            {"  ".repeat(opt.depth - 1)}
+                            {"└─"}
                           </span>
                         )}
-                        <span className="truncate">{opt.label.split(" › ").pop()}</span>
+                        <span className="truncate">
+                          {opt.label.split(" › ").pop()}
+                        </span>
                         {opt.depth === 0 && (
-                          <span className="text-xs text-muted-foreground ml-1 shrink-0">(topic)</span>
+                          <span className="text-xs text-muted-foreground ml-1 shrink-0">
+                            (topic)
+                          </span>
                         )}
                       </span>
                     </SelectItem>
                   ))}
-                  {parentOptions.length === 0 && mode.type === "new-subdeck" && (
-                    <div className="px-2 py-3 text-sm text-muted-foreground text-center">
-                      No topics yet. Create a main topic first.
-                    </div>
-                  )}
+                  {parentOptions.length === 0 &&
+                    mode.type === "new-subdeck" && (
+                      <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                        No topics yet. Create a main topic first.
+                      </div>
+                    )}
                 </SelectContent>
               </Select>
               {selectedParentOpt && selectedParentOpt.depth >= 1 && (
                 <p className="text-xs text-muted-foreground">
-                  This will create a sub-sub-deck inside <span className="font-medium">{selectedParentOpt.label}</span>.
+                  This will create a sub-sub-deck inside{" "}
+                  <span className="font-medium">{selectedParentOpt.label}</span>
+                  .
                 </p>
               )}
             </div>
@@ -250,7 +356,10 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-1.5">
                   <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                  Sub-decks <span className="text-muted-foreground font-normal">(optional)</span>
+                  Sub-decks{" "}
+                  <span className="text-muted-foreground font-normal">
+                    (optional)
+                  </span>
                 </Label>
                 {subSlots.length < 8 && (
                   <button
@@ -275,10 +384,12 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
                 <div className="space-y-2">
                   {subSlots.map((slot, idx) => (
                     <div key={slot.id} className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground w-5 text-right shrink-0">{idx + 1}.</span>
+                      <span className="text-xs text-muted-foreground w-5 text-right shrink-0">
+                        {idx + 1}.
+                      </span>
                       <Input
                         value={slot.name}
-                        onChange={e => updateSubSlot(slot.id, e.target.value)}
+                        onChange={(e) => updateSubSlot(slot.id, e.target.value)}
                         placeholder={`Sub-deck ${idx + 1} name…`}
                         className="h-8 text-sm flex-1"
                         disabled={isSaving}
@@ -297,7 +408,11 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
 
               {subSlots.length > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {subSlots.filter(s => s.name.trim()).length} named sub-deck{subSlots.filter(s => s.name.trim()).length !== 1 ? "s" : ""} will be created.
+                  {subSlots.filter((s) => s.name.trim()).length} named sub-deck
+                  {subSlots.filter((s) => s.name.trim()).length !== 1
+                    ? "s"
+                    : ""}{" "}
+                  will be created.
                 </p>
               )}
             </div>
@@ -306,35 +421,64 @@ export function DeckFormSheet({ open, onOpenChange, mode, onDone }: DeckFormShee
           {/* Preview */}
           {mode.type === "new-topic" && name.trim() && (
             <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Preview</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Preview
+              </p>
               <div className="flex items-center gap-2">
                 <FolderOpen className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-sm font-medium">{name.trim()}</span>
-                {subSlots.some(s => s.name.trim()) && (
+                {subSlots.some((s) => s.name.trim()) && (
                   <Badge variant="outline" className="text-xs ml-auto">
-                    {subSlots.filter(s => s.name.trim()).length} sub-deck{subSlots.filter(s => s.name.trim()).length !== 1 ? "s" : ""}
+                    {subSlots.filter((s) => s.name.trim()).length} sub-deck
+                    {subSlots.filter((s) => s.name.trim()).length !== 1
+                      ? "s"
+                      : ""}
                   </Badge>
                 )}
               </div>
-              {subSlots.filter(s => s.name.trim()).map((s) => (
-                <div key={s.id} className="flex items-center gap-2 ml-4 border-l-2 border-primary/20 pl-3">
-                  <FileText className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                  <span className="text-xs text-muted-foreground">{name.trim()}::{s.name.trim()}</span>
-                </div>
-              ))}
+              {subSlots
+                .filter((s) => s.name.trim())
+                .map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-2 ml-4 border-l-2 border-primary/20 pl-3"
+                  >
+                    <FileText className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                    <span className="text-xs text-muted-foreground">
+                      {name.trim()}::{s.name.trim()}
+                    </span>
+                  </div>
+                ))}
             </div>
           )}
 
-          <Button className="w-full" onClick={handleSave} disabled={!name.trim() || isSaving || (mode.type === "new-subdeck" && parentId === "none" && parentOptions.length > 0)}>
-            {isSaving
-              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</>
-              : mode.type === "edit" ? "Save Changes"
-              : mode.type === "new-topic"
-                ? subSlots.some(s => s.name.trim())
-                  ? `Create Topic + ${subSlots.filter(s => s.name.trim()).length} Sub-deck${subSlots.filter(s => s.name.trim()).length !== 1 ? "s" : ""}`
-                  : "Create Topic"
-              : "Create Deck"
+          <Button
+            className="w-full"
+            onClick={handleSave}
+            disabled={
+              !name.trim() ||
+              isSaving ||
+              (mode.type === "new-subdeck" &&
+                parentId === "none" &&
+                parentOptions.length > 0)
             }
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving…
+              </>
+            ) : mode.type === "edit" ? (
+              "Save Changes"
+            ) : mode.type === "new-topic" ? (
+              subSlots.some((s) => s.name.trim()) ? (
+                `Create Topic + ${subSlots.filter((s) => s.name.trim()).length} Sub-deck${subSlots.filter((s) => s.name.trim()).length !== 1 ? "s" : ""}`
+              ) : (
+                "Create Topic"
+              )
+            ) : (
+              "Create Deck"
+            )}
           </Button>
         </div>
       </SheetContent>

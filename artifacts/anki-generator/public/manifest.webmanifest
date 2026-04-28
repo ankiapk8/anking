@@ -35,21 +35,27 @@
       "short_name": "Generate",
       "description": "Create a new deck from text or PDFs",
       "url": "/decks?new=1",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+      ]
     },
     {
       "name": "My Decks",
       "short_name": "Decks",
       "description": "Browse your library",
       "url": "/decks",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+      ]
     },
     {
       "name": "Study History",
       "short_name": "History",
       "description": "Review past sessions",
       "url": "/history",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+      ]
     }
   ],
   "share_target": {

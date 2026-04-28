@@ -12,7 +12,10 @@ function apkMimePlugin() {
     configureServer(server: any) {
       server.middlewares.use((req: any, res: any, next: any) => {
         if (req.url && /\.apk(\?|$)/i.test(req.url)) {
-          res.setHeader("Content-Type", "application/vnd.android.package-archive");
+          res.setHeader(
+            "Content-Type",
+            "application/vnd.android.package-archive",
+          );
         }
         next();
       });
@@ -20,7 +23,10 @@ function apkMimePlugin() {
     configurePreviewServer(server: any) {
       server.middlewares.use((req: any, res: any, next: any) => {
         if (req.url && /\.apk(\?|$)/i.test(req.url)) {
-          res.setHeader("Content-Type", "application/vnd.android.package-archive");
+          res.setHeader(
+            "Content-Type",
+            "application/vnd.android.package-archive",
+          );
         }
         next();
       });
@@ -30,15 +36,16 @@ function apkMimePlugin() {
 
 export default defineConfig({
   base: basePath,
-  plugins: [
-    react(),
-    tailwindcss(),
-    apkMimePlugin(),
-  ],
+  plugins: [react(), tailwindcss(), apkMimePlugin()],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
-      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
+      "@assets": path.resolve(
+        import.meta.dirname,
+        "..",
+        "..",
+        "attached_assets",
+      ),
     },
     dedupe: ["react", "react-dom"],
   },
@@ -62,11 +69,7 @@ export default defineConfig({
       deny: ["**/.*"],
     },
     watch: {
-      ignored: [
-        "**/android/**",
-        "**/dist/**",
-        "**/node_modules/**",
-      ],
+      ignored: ["**/android/**", "**/dist/**", "**/node_modules/**"],
     },
   },
   preview: {

@@ -7,7 +7,7 @@ export function serializeCard(card: DbCard): Record<string, unknown> {
   if (card.choices) {
     try {
       const parsed = JSON.parse(card.choices);
-      if (Array.isArray(parsed) && parsed.every(x => typeof x === "string")) {
+      if (Array.isArray(parsed) && parsed.every((x) => typeof x === "string")) {
         parsedChoices = parsed;
       }
     } catch {

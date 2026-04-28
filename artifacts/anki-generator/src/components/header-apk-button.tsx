@@ -88,7 +88,10 @@ export function HeaderApkButton() {
     setMounted(true);
     if (typeof window === "undefined") return;
     const w = window as unknown as {
-      Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+      Capacitor?: {
+        isNativePlatform?: () => boolean;
+        getPlatform?: () => string;
+      };
     };
     const inApk =
       !!w.Capacitor?.isNativePlatform?.() ||
@@ -105,7 +108,8 @@ export function HeaderApkButton() {
     const iOS =
       /iPad|iPhone|iPod/.test(ua) ||
       (navigator.platform === "MacIntel" &&
-        (navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints! > 1);
+        (navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints! >
+          1);
     setIsIos(iOS);
   }, []);
 
@@ -113,7 +117,8 @@ export function HeaderApkButton() {
   useEffect(() => {
     if (!open) return;
     const onClick = (e: MouseEvent) => {
-      if (popRef.current && !popRef.current.contains(e.target as Node)) setOpen(false);
+      if (popRef.current && !popRef.current.contains(e.target as Node))
+        setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -183,7 +188,7 @@ export function HeaderApkButton() {
     setToast(
       slot === "dev"
         ? "Downloading dev APK… open the file when it's done to install."
-        : "Downloading published APK… open the file when it's done to install."
+        : "Downloading published APK… open the file when it's done to install.",
     );
     setOpen(false);
   };
@@ -205,7 +210,7 @@ export function HeaderApkButton() {
     setToast(
       slot === "dev"
         ? "Rebuilding the dev APK in the background… takes ~1 minute."
-        : "Rebuilding the published APK in the background… takes ~1 minute."
+        : "Rebuilding the published APK in the background… takes ~1 minute.",
     );
   };
 
@@ -231,7 +236,11 @@ export function HeaderApkButton() {
   };
 
   const anyBuilding = dev.building || pub.building;
-  const mainLabel = isIos ? "Install on iPhone/iPad" : anyBuilding ? "Building APK…" : "Get the App";
+  const mainLabel = isIos
+    ? "Install on iPhone/iPad"
+    : anyBuilding
+      ? "Building APK…"
+      : "Get the App";
   const mainBadge = isIos ? "iOS" : anyBuilding ? "WAIT" : "APK";
 
   return (
@@ -242,7 +251,9 @@ export function HeaderApkButton() {
           onClick={handleMainClick}
           aria-haspopup={!isIos}
           aria-expanded={!isIos && open}
-          aria-label={isIos ? "Install on iPhone or iPad" : "Download the Android app"}
+          aria-label={
+            isIos ? "Install on iPhone or iPad" : "Download the Android app"
+          }
           className="group relative inline-flex items-center gap-1.5 sm:gap-2 h-9 px-2.5 sm:px-3.5 rounded-full overflow-hidden text-white text-xs sm:text-sm font-semibold tracking-tight shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.03] active:scale-[0.97] transition-all duration-200"
           style={{
             background:
@@ -278,7 +289,9 @@ export function HeaderApkButton() {
               </>
             )}
           </span>
-          <span className="relative hidden sm:inline whitespace-nowrap">{mainLabel}</span>
+          <span className="relative hidden sm:inline whitespace-nowrap">
+            {mainLabel}
+          </span>
           <span
             aria-hidden
             className="relative hidden sm:inline-flex items-center gap-1 ml-0.5 px-1.5 py-0.5 rounded-full bg-white/20 text-[9px] font-bold uppercase tracking-wider backdrop-blur-sm"
@@ -310,7 +323,8 @@ export function HeaderApkButton() {
                     Choose which build to install
                   </div>
                   <div className="text-[11px] text-emerald-700/80">
-                    Each APK loads the chosen URL on launch — pick the one that matches where you want to use it.
+                    Each APK loads the chosen URL on launch — pick the one that
+                    matches where you want to use it.
                   </div>
                 </div>
                 <div className="p-2 space-y-1.5">
@@ -338,8 +352,8 @@ export function HeaderApkButton() {
                   />
                 </div>
                 <div className="px-4 py-2.5 border-t border-emerald-100 bg-emerald-50/40 text-[10.5px] text-emerald-800/80 leading-snug">
-                  <strong>Android tip:</strong> after downloading, open the file and accept "Install
-                  from unknown sources" when prompted.
+                  <strong>Android tip:</strong> after downloading, open the file
+                  and accept "Install from unknown sources" when prompted.
                 </div>
               </div>
             </motion.div>
@@ -392,7 +406,8 @@ function TargetRow({
 
   let primaryLabel: React.ReactNode;
   let primaryIcon: React.ReactNode;
-  let primaryClass = "bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:scale-[1.02] active:scale-[0.98]";
+  let primaryClass =
+    "bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:scale-[1.02] active:scale-[0.98]";
 
   if (noHost) {
     primaryIcon = <Hourglass className="w-4 h-4" />;
@@ -419,8 +434,13 @@ function TargetRow({
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-slate-800 leading-tight truncate">{title}</div>
-        <div className="text-[11px] text-slate-500 leading-tight truncate" title={state.host ?? subtitle}>
+        <div className="text-sm font-semibold text-slate-800 leading-tight truncate">
+          {title}
+        </div>
+        <div
+          className="text-[11px] text-slate-500 leading-tight truncate"
+          title={state.host ?? subtitle}
+        >
           {state.host ?? subtitle}
         </div>
         {showRebuildSide && (
