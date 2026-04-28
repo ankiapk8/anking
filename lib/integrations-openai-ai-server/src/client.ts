@@ -5,9 +5,10 @@ const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || process.env.OPENA
 
 if (!apiKey) {
   console.warn("WARNING: Neither AI_INTEGRATIONS_OPENAI_API_KEY nor OPENAI_API_KEY is set.");
+} else {
+  const maskedKey = apiKey.slice(0, 7) + "..." + apiKey.slice(-4);
+  console.info(`AI client initialized with baseURL: ${baseURL} and apiKey: ${maskedKey}`);
 }
-
-console.info(`AI client initialized with baseURL: ${baseURL}`);
 
 export const openai = new OpenAI({
   apiKey: apiKey,
