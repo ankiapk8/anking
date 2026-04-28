@@ -1,4 +1,4 @@
-FROM node:22-slim AS base
+FROM node:22 AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -28,7 +28,7 @@ RUN rm -rf artifacts/mockup-sandbox artifacts/build-apk
 RUN pnpm --filter "@workspace/api-server" --filter "@workspace/anki-generator" -r --if-present run build
 
 # Production Stage
-FROM node:22-slim
+FROM node:22
 WORKDIR /app
 RUN corepack enable
 
@@ -39,4 +39,4 @@ EXPOSE 3000
 ENV NODE_ENV=production
 
 WORKDIR /app/artifacts/api-server
-CMD ["node", "dist/index.mjs"]
+CMD ["node", "--enable-source-maps", "dist/index.mjs"]

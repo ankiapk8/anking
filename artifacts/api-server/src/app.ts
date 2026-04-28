@@ -39,7 +39,7 @@ const clientDist = path.join(__dirname, "../../../anki-generator/dist/public");
 app.use(express.static(clientDist));
 
 // Fallback for SPA routing
-app.get("*", (req, res) => {
+app.get(/^(?!\/api).+/, (req, res) => {
   if (req.url.startsWith("/api")) {
     res.status(404).json({ error: "API route not found" });
     return;

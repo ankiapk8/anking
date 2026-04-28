@@ -105,6 +105,9 @@ async function buildAll() {
       "pdfjs-dist/*",
       "tesseract.js",
       "tesseract.js/*",
+      "script-loader!sql.js",
+      "anki-apkg-export",
+      "sql.js",
     ],
     sourcemap: "linked",
     plugins: [

@@ -5,10 +5,6 @@ import { inArray } from "drizzle-orm";
 import { db, decksTable, cardsTable } from "@workspace/db";
 
 const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const AnkiExport: any = require("anki-apkg-export").default;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const JSZip: any = require("jszip");
 
 const router: IRouter = Router();
 
@@ -204,6 +200,10 @@ function collectAllDescendantIds(
 }
 
 router.post("/export-apkg", async (req, res, next): Promise<void> => {
+  const { default: AnkiExport_ } = await import("anki-apkg-export");
+  const { default: JSZip } = await import("jszip");
+  const AnkiExport: any = (AnkiExport_ as any).default || AnkiExport_;
+
   const { deckIds, exportName } = req.body as {
     deckIds?: number[];
     exportName?: string;
