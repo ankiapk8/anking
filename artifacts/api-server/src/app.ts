@@ -45,9 +45,11 @@ app.use(express.static(clientDist));
 
 // Fallback for SPA routing
 app.get(/^(?!\/api).*/, (req, res) => {
-  res.sendFile(path.join(clientDist, "index.html"), (err) => {
+  const indexHtml = path.resolve(clientDist, "index.html");
+  res.sendFile(indexHtml, (err) => {
     if (err) {
-      res.status(404).send("Frontend not built or index.html missing");
+      logger.error({ err, indexHtml, clientDist, cwd: process.cwd(), dirname: __dirname }, "Failed to serve index.html");
+      res.status(404).send(`Frontend not built or index.html missing at ${indexHtml}`);
     }
   });
 });
