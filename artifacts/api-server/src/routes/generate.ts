@@ -1079,6 +1079,7 @@ router.post("/generate/stream", async (req, res, next): Promise<void> => {
       }
       return;
     }
+    console.error("SSE AI card generation failed:", error);
     req.log.error({ err: error }, "SSE AI card generation failed");
     const status = getErrorStatus(error);
     const code = getErrorCode(error);

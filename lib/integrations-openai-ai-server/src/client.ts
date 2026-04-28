@@ -6,12 +6,16 @@ const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || process.env.OPENA
 if (!apiKey) {
   console.warn("WARNING: Neither AI_INTEGRATIONS_OPENAI_API_KEY nor OPENAI_API_KEY is set.");
 } else {
-  // Clear error if using Replit-only tokens outside of Replit
-  if (apiKey.startsWith("replit-ai-") && !process.env.REPLIT_SLUG) {
+  const isReplitEnv = !!process.env.REPLIT_SLUG;
+  const isReplitKey = apiKey.startsWith("replit-ai-");
+  const isReplitURL = baseURL.includes("replit");
+
+  if ((isReplitKey || isReplitURL) && !isReplitEnv) {
+    console.error("CRITICAL CONFIG ERROR: You are using Replit-specific AI settings on a non-Replit environment (Render).");
     throw new Error(
-      "ERROR: You are using a Replit AI token on a non-Replit environment (Render). " +
-      "These tokens only work inside Replit. Please use a standard OpenAI API key (sk-...) " +
-      "and ensure the OPENAI_API_KEY environment variable is set in your Render dashboard."
+      "ERROR: Replit AI Integrations only work inside the Replit environment. " +
+      "Since you are on Render, you MUST provide a standard OpenAI API key (sk-...) " +
+      "in the OPENAI_API_KEY environment variable and leave OPENAI_BASE_URL empty (it defaults to OpenAI)."
     );
   }
   const maskedKey = apiKey.slice(0, 7) + "..." + apiKey.slice(-4);

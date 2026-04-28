@@ -156,6 +156,15 @@ router.post("/explain", async (req, res): Promise<void> => {
     (res as { flushHeaders: () => void }).flushHeaders();
   }
 
+  // Send SSE comment heartbeats to keep proxies from closing the connection
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(`: ping ${Date.now()}\n\n`);
+    } catch {
+      clearInterval(heartbeat);
+    }
+  }, 10000);
+
   try {
     const stream = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -171,8 +180,10 @@ router.post("/explain", async (req, res): Promise<void> => {
       const text = chunk.choices[0]?.delta?.content;
       if (text) res.write(text);
     }
+    clearInterval(heartbeat);
     res.end();
   } catch (err) {
+    clearInterval(heartbeat);
     console.error("AI explanation failed:", err);
     req.log.error({ err }, "AI explanation failed");
     if (!res.headersSent) {
