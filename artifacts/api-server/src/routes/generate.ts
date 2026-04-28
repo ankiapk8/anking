@@ -496,7 +496,7 @@ Goal: ~${targetCards} cards for this segment, but you MUST add more if the segme
   const response = await createChatCompletionWithRetry(
     openai,
     {
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 16384,
       stream: false as const,
       messages: [
@@ -703,7 +703,7 @@ No markdown, no commentary, no \`\`\` fences — just the JSON array.${customPro
     const response = await createChatCompletionWithRetry(
       openai,
       {
-        model: "gpt-4.1",
+        model: "gpt-4o",
         max_completion_tokens: 16384,
         stream: false as const,
         messages: [
@@ -1263,7 +1263,7 @@ Goal: ~${targetQuestions} high-quality MCQs for this segment, but you MUST add m
   const response = await createChatCompletionWithRetry(
     openai,
     {
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 16384,
       stream: false as const,
       messages: [
