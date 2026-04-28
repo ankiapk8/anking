@@ -27,6 +27,10 @@ RUN rm -rf artifacts/mockup-sandbox artifacts/build-apk
 # Build only the core application
 RUN pnpm --filter "@workspace/api-server" --filter "@workspace/anki-generator" -r --if-present run build
 
+# Verify build output exists
+RUN ls -la artifacts/anki-generator/dist/public/index.html
+RUN ls -la artifacts/api-server/dist/index.mjs
+
 # Production Stage
 FROM node:22
 WORKDIR /app
