@@ -21,8 +21,8 @@ RUN pnpm install
 # Copy everything else
 COPY . .
 
-# Build everything (ignoring type errors)
-RUN pnpm -r --if-present run build
+# Build only the necessary packages (Frontend and Backend)
+RUN pnpm --filter "@workspace/api-server" --filter "@workspace/anki-generator" -r --if-present run build
 
 # Production Stage
 FROM node:22-slim
