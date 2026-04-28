@@ -7,6 +7,8 @@ if (!apiKey) {
   console.warn("WARNING: Neither AI_INTEGRATIONS_OPENAI_API_KEY nor OPENAI_API_KEY is set.");
 }
 
+console.info(`AI client initialized with baseURL: ${baseURL}`);
+
 export const openai = new OpenAI({
   apiKey: apiKey,
   baseURL: baseURL,
