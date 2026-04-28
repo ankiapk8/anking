@@ -40,7 +40,7 @@ app.use(express.urlencoded({ extended: true, limit: "200mb" }));
 app.use("/api", router);
 
 // Serve static files from the frontend build
-const clientDist = path.join(__dirname, "../../../anki-generator/dist/public");
+const clientDist = path.join(__dirname, "../../anki-generator/dist/public");
 app.use(express.static(clientDist));
 
 // Fallback for SPA routing
