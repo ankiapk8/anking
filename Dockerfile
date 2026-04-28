@@ -21,7 +21,10 @@ RUN pnpm install
 # Copy everything else
 COPY . .
 
-# Build only the necessary packages (Frontend and Backend)
+# Delete failing sandbox/mockup projects that are not needed for production
+RUN rm -rf artifacts/mockup-sandbox artifacts/build-apk
+
+# Build only the core application
 RUN pnpm --filter "@workspace/api-server" --filter "@workspace/anki-generator" -r --if-present run build
 
 # Production Stage
