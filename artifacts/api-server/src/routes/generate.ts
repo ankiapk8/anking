@@ -107,15 +107,14 @@ function parseJson<T>(raw: string): T[] {
       continue;
     }
   }
+  console.warn("AI JSON parsing failed. Raw response snippet:", raw.slice(0, 500));
   return [];
 }
 
 async function getOpenAIClient() {
-  if (
-    !process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ||
-    !process.env.AI_INTEGRATIONS_OPENAI_API_KEY
-  ) {
-    throw new Error("AI card generation is not configured yet.");
+  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("AI card generation is not configured yet. Set OPENAI_API_KEY.");
   }
   const { openai } = await import("@workspace/integrations-openai-ai-server");
   return openai;
@@ -581,7 +580,10 @@ async function generateTextCards(
     );
     for (const r of settled) {
       if (r.status === "fulfilled") allCards.push(...r.value);
-      else requestLog.warn({ err: r.reason }, "Text chunk generation failed");
+      else {
+        console.error("Text chunk generation failed:", r.reason);
+        requestLog.warn({ err: r.reason }, "Text chunk generation failed");
+      }
     }
     done += slice.length;
     onProgress?.(done, chunks.length);

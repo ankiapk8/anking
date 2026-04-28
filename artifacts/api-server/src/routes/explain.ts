@@ -5,11 +5,9 @@ const router: IRouter = Router();
 type ExplainMode = "full" | "revision" | "osce";
 
 async function getOpenAIClient() {
-  if (
-    !process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ||
-    !process.env.AI_INTEGRATIONS_OPENAI_API_KEY
-  ) {
-    throw new Error("AI explanation is not configured yet.");
+  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("AI explanation is not configured yet. Set OPENAI_API_KEY.");
   }
   const { openai } = await import("@workspace/integrations-openai-ai-server");
   return openai;
@@ -175,6 +173,7 @@ router.post("/explain", async (req, res): Promise<void> => {
     }
     res.end();
   } catch (err) {
+    console.error("AI explanation failed:", err);
     req.log.error({ err }, "AI explanation failed");
     if (!res.headersSent) {
       res.status(503).json({ error: "AI explanation failed." });
